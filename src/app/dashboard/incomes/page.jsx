@@ -1,5 +1,5 @@
 "use client";
-import Button from "@/app/components/button";
+// import Button from "@/app/components/button";
 import { useState, useEffect } from "react";
 
 function ProductTable() {
@@ -59,7 +59,7 @@ function ProductTable() {
   return (
     <div className="p-4">
       <h1 className="text-slate-200 font-bold text-4xl mb-4">Activos</h1>
-      <Button />
+      {/* <Button /> */}
       <table className="w-full bg-slate-800 text-slate-200">
         <thead>
           <tr>
