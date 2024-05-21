@@ -97,12 +97,12 @@ function ProductTable() {
           ))}
         </tbody>
       </table>
-      {editingProduct && (
+      {/* {editingProduct && (
         <EditProductForm
           product={editingProduct}
           onSubmit={handleEditFormSubmit}
         />
-      )}
+      )} */}
     </div>
   );
 }
