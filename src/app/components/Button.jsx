@@ -5,7 +5,7 @@ function Button(props) {
     <div>
       <button
         className="bg-green-500 text-white p-3 rounded-lg mb-4"
-        onClick={() => router.push("/dashboard/incomesCreate")}
+        onClick={() => router.push("/dashboard/ingredientsCreate")}
       >
         Create Item
       </button>

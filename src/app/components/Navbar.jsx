@@ -9,7 +9,7 @@ async function Navbar() {
 
   return (
     <nav className="flex justify-between items-center bg-gray-950 text-white px-24 py-2">
-      <Image src="/logo-white.png" alt="Logo" width={120} height={120} className="mr-3" />
+       <Link href="/dashboard"><Image src="/logo-white.png" alt="Logo" width={120} height={120} className="mr-3" /></Link>
 
       <ul className="flex gap-x-2">
         {!session?.user ? (
@@ -27,10 +27,10 @@ async function Navbar() {
         ) : (
           <>
             <li>
-              <Link href="/dashboard/incomes">Activos</Link>
+              <Link href="/dashboard/ingredients">Ingredientes</Link>
             </li>
             <li>
-              <Link href="/dashboard">Dashboard</Link>
+              <Link href="/dashboard/products">Productos</Link>
             </li>
             <li>
               <Link href="/api/auth/signout">Logout</Link>

@@ -15,8 +15,8 @@ export default function Footer() {
       <div>
         <ul className="flex flex-col">
           <a href="/">Home</a>
-          <a href="#about">About us</a>
-          <a href="#services">Our services</a>
+          <a href="#about">Nosotros</a>
+          <a href="#services">Menú</a>
         </ul>
       </div>
       <div>
@@ -34,7 +34,7 @@ export default function Footer() {
           href="#book"
           className="font-bold text-white px-3 py-1 rounded border-white text-sm border-2"
         >
-          Get an Instant Price
+          Nuestro menú
         </a>
       </div>
     </div>
