@@ -13,7 +13,7 @@ export const metadata = {
   icons: {
     apple: "/icon-192x192"
   },
-  themeColor: "#417505 "
+  themeColor: "#020712 "
 };
 
 export default function RootLayout({ children }) {
