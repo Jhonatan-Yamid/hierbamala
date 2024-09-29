@@ -1,6 +1,7 @@
-"use client"
+"use client";
 import ProductForm from "@/app/components/ProductForm";
 import { useState, useEffect } from "react";
+import ProductItem from "./ProductItem"; // Asegúrate de que la ruta sea correcta
 
 function ProductTable() {
   const [products, setProducts] = useState([]);
@@ -99,47 +100,28 @@ function ProductTable() {
   };
 
   return (
-    <div className="p-4">
-      <h1 className="text-slate-200 font-bold text-4xl mb-4">Productos</h1>
-      <button
-        className="bg-green-500 text-white p-2 rounded mb-4"
-        onClick={handleNewProduct}
-      >
-        New
-      </button>
-      <table className="w-full bg-slate-800 text-slate-200">
-        <thead>
-          <tr>
-            <th className="p-3 text-left">Nombre</th>
-            <th className="p-3 text-left">Descripcion</th>
-            <th className="p-3 text-left">Precio</th>
-            <th className="p-3 text-left">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {products.map((product) => (
-            <tr key={product.id}>
-              <td className="p-3">{product.name}</td>
-              <td className="p-3">{product.description}</td>
-              <td className="p-3">{product.price}</td>
-              <td className="p-3">
-                <button
-                  className="bg-yellow-500 text-white p-2 rounded mr-2"
-                  onClick={() => handleEdit(product)}
-                >
-                  Edit
-                </button>
-                <button
-                  className="bg-red-500 text-white p-2 rounded"
-                  onClick={() => handleDelete(product.id)}
-                >
-                  Delete
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-slate-200 font-semibold text-3xl">Productos</h1>
+        <button
+          className="bg-gray-800 text-gray-200 flex items-center rounded-md px-4 py-1 hover:bg-gray-600 hover:text-white"
+          onClick={handleNewProduct}
+        >
+          Nuevo +
+        </button>
+      </div>
+      <div className="flex flex-col gap-4 border-solid border rounded-md border-gray-600 p-5">
+        <h1 className="text-slate-200 font-medium text-xl">Listado de Productos</h1>
+        {products.map((product) => (
+          <ProductItem
+            key={product.id}
+            product={product}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
+        ))}
+      </div>
+
       {editingProduct !== null || isNewProduct ? (
         <ProductForm
           product={editingProduct || null}

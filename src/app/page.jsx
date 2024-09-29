@@ -2,6 +2,7 @@ import React from 'react';
 import Carousel from './components/Carousel';
 import SectionAbout from './components/SectionAbout';
 import Map from './components/Map';
+import Footer from './components/Footer';
 
 function page(props) {
   return (
@@ -10,6 +11,7 @@ function page(props) {
        <SectionAbout />
        <Map />
        {/* <SectionAbout /> */}
+       <Footer />
     </div>
   );
 }
