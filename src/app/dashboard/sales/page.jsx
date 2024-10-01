@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { FaCashRegister } from "react-icons/fa"; // Importar el ícono de caja registradora
 import SaleForm from "./SaleForm";
+import { IoClose } from "react-icons/io5";
 
 function SaleTable() {
   const [sales, setSales] = useState([]);
@@ -36,11 +37,54 @@ function SaleTable() {
     setSelectedProducts([]);
     setEditingSale(null);
     setIsNewSale(true);
+    // Deshabilitar el scroll en el fondo
+    document.body.style.overflow = "hidden";
   };
 
-  const handleAddProduct = (product) => {
-    setSelectedProducts([...selectedProducts, { ...product, quantity: 1 }]);
+  const handleCloseForm = () => {
+    setIsNewSale(false);
+    // Habilitar el scroll en el fondo
+    document.body.style.overflow = "auto";
   };
+
+  const handleEditSale = (sale) => {
+    // Asegúrate de que la venta incluye los productos
+    if (sale.products && sale.products.length > 0) {
+        setSelectedProducts(sale.products.map((saleProduct) => ({
+            ...saleProduct.product, // Aquí accedemos al producto asociado
+            quantity: saleProduct.quantity || 0, // La cantidad que ya estaba
+        })));
+    } else {
+        setSelectedProducts([]); // En caso de que no haya productos
+    }
+    
+    setEditingSale(parseInt(sale.id)); // Guardar la venta que se está editando
+    setIsNewSale(true);
+    document.body.style.overflow = "hidden"; // Deshabilitar scroll
+};
+
+
+  const handleDeleteSale = async (saleId) => {
+    if (confirm("¿Estás seguro de que deseas eliminar esta venta?")) {
+      try {
+        const response = await fetch(`/api/sale?id=${saleId}`, {
+          method: "DELETE",
+        });
+        if (response.ok) {
+          setSales(sales.filter((sale) => sale.id !== saleId)); // Actualizar la lista de ventas
+        } else {
+          console.error("Error al eliminar la venta:", response.statusText);
+        }
+      } catch (error) {
+        console.error("Error al eliminar la venta:", error.message);
+      }
+    }
+  };
+  
+
+  const handleAddProduct = (product) => {
+    setSelectedProducts([...selectedProducts, { ...product, quantity: 0 }]);
+};
 
   const handleRemoveProduct = (id) => {
     setSelectedProducts(
@@ -57,25 +101,37 @@ function SaleTable() {
   };
 
   const handleSaleSubmit = async (saleData) => {
-    try {
-      const response = await fetch("/api/sale", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(saleData),
-      });
-      if (response.ok) {
-        const newSale = await response.json();
-        setSales([...sales, newSale]); // Agregar la nueva venta a la lista
-        setIsNewSale(false); // Ocultar el formulario después de crear la venta
-      } else {
-        console.error("Error al crear la venta:", response.statusText);
-      }
-    } catch (error) {
-      console.error("Error al crear la venta:", error.message);
+    const saleId = editingSale; // Obtén el ID de la venta que se está editando
+  
+    const url = saleId ? `/api/sale?id=${saleId}` : `/api/sale`; // Usar POST para nuevas ventas
+  
+    const method = saleId ? "PUT" : "POST"; // Usar PUT para actualizar y POST para crear
+  
+    const response = await fetch(url, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        totalAmount: saleData.totalAmount,
+        products: saleData.products, // Aquí es donde se pasan los productos
+      }),
+    });
+  
+    if (!response.ok) {
+      console.error("Error en la solicitud:", response.statusText);
+    } else {
+      console.log("Venta enviada con éxito");
     }
   };
+  
+
+
+
+
+
+  
+
 
   return (
     <div className="p-6">
@@ -91,40 +147,44 @@ function SaleTable() {
 
       {/* Listado de ventas */}
       <div className="flex flex-col gap-4 border-solid border rounded-md border-gray-600 p-5">
-        <h1 className="text-slate-200 font-medium text-xl">
-          Listado de Ventas
-        </h1>
+        <h1 className="text-slate-200 font-medium text-xl">Listado de Ventas</h1>
         {sales.length === 0 ? (
           <p className="text-slate-200">No hay ventas registradas</p>
         ) : (
           sales.map((sale) => (
-            <div
-              key={sale.id}
-              className="flex items-center mb-4"
-            >
+            <div key={sale.id} className="flex items-center mb-4 cursor-pointer" onClick={() => handleEditSale(sale)}>
               <div className="flex items-center justify-center w-14 h-14 bg-gray-800 rounded-md mr-4">
-          <FaCashRegister className="text-white" size={20} />{" "}
-          {/* Icono de comida */}
-        </div>
+                <FaCashRegister className="text-white" size={20} />
+              </div>
               <div className="flex justify-between w-full">
                 <div>
                   <h2 className="text-slate-200 text-xl font-semibold">
-                    Venta - {new Date(sale.updatedAt).toLocaleDateString("es-CL")} {/* Mostrar la fecha */}
+                    Venta - {new Date(sale.updatedAt).toLocaleDateString("es-CL")}
                   </h2>
                   <span className="text-slate-300 text-sm">
-                    Productos: {sale.products.length}
+                    Productos: {sale.products?.length || 0}
                   </span>
                 </div>
                 <div className="flex items-center">
-                  <span className="text-slate-200 text-lg font-semibold mr-2">
-                    Total:
-                  </span>
+                  <span className="text-slate-200 text-lg font-semibold mr-2">Total:</span>
                   <span className="text-slate-300 text-lg font-semibold">
                     {new Intl.NumberFormat("es-CL", {
                       style: "currency",
                       currency: "CLP",
                     }).format(sale.totalAmount)}
                   </span>
+                  {/* Botón de eliminar venta */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation(); // Evita que el evento de clic se propague
+                      handleDeleteSale(sale.id);
+                    }}
+                    className="text-gray-600 hover:text-gray-200 text-3xl ml-4"
+                  >
+                    &times; {/* Icono de eliminación */}
+                  </button>
+
+                  
                 </div>
               </div>
             </div>
@@ -133,16 +193,35 @@ function SaleTable() {
       </div>
 
       {/* Mostrar formulario de nueva venta o edición */}
-      {isNewSale ? (
-        <SaleForm
-          selectedProducts={selectedProducts}
-          onAddProduct={handleAddProduct}
-          onUpdateQuantity={handleUpdateQuantity}
-          onRemoveProduct={handleRemoveProduct}
-          onSubmit={handleSaleSubmit}
-          products={products} // Pasar los productos disponibles al formulario
-        />
-      ) : null}
+      {isNewSale && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+          <div className="bg-gray-900 p-6 rounded-lg w-full h-full relative">
+            {/* Contenedor para el título y el botón de cerrar */}
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-white text-2xl font-semibold">
+                {editingSale ? "Editar Venta" : "Nueva Venta"}
+              </h2>
+              {/* Botón de cerrar en la esquina derecha */}
+              <button
+                className="text-white hover:text-gray-400"
+                onClick={handleCloseForm}
+              >
+                <IoClose size={30} />
+              </button>
+            </div>
+            <div className="h-full overflow-y-auto">
+              <SaleForm
+                selectedProducts={selectedProducts}
+                onAddProduct={handleAddProduct}
+                onUpdateQuantity={handleUpdateQuantity}
+                onRemoveProduct={handleRemoveProduct}
+                onSubmit={handleSaleSubmit}
+                products={products} // Pasar los productos disponibles al formulario
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

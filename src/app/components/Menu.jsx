@@ -23,50 +23,49 @@ const Menu = ({ session }) => {
 
       {/* Menú desplegable en móviles */}
       {isOpen && (
-        <div className="fixed top-0 left-0 w-1/2 h-full bg-gray-800 z-50 flex flex-col">
+        <div className="fixed top-0 left-0 w-1/2 h-full bg-gray-800 z-50 flex flex-col pl-6 pt-5">
           {/* Logo en la parte superior y ícono de cerrar dentro del menú */}
           <div className="flex justify-between items-center p-4">
             <Link href="/dashboard">
               <Image
                 src="/logo-white.png"
                 alt="Logo"
-                width={120}
-                height={120}
+                width={200}
+                height={200}
                 className="mr-3"
               />
             </Link>
             <button onClick={toggleMenu} className="text-white">
-              <IoClose size={30} /> {/* Ícono de cerrar dentro del menú */}
+              <IoClose size={40} /> {/* Ícono de cerrar dentro del menú */}
             </button>
-          </div>
-          
+          </div>        
           {/* Opciones del menú */}
-          <ul className="flex flex-col gap-y-4 p-4 flex-1">
+          <ul className="flex flex-col gap-y-4 p-4 flex-1 text-3xl space-y-8">
             {!session?.user ? (
               <>
                 <li>
-                  <Link href="/" className="text-white text-lg">Home</Link>
+                  <Link href="/" className="text-white">Home</Link>
                 </li>
                 <li>
-                  <Link href="/auth/login" className="text-white text-lg">Login</Link>
+                  <Link href="/auth/login" className="text-white">Login</Link>
                 </li>
                 <li>
-                  <Link href="/auth/register" className="text-white text-lg">Register</Link>
+                  <Link href="/auth/register" className="text-white">Register</Link>
                 </li>
               </>
             ) : (
               <>
               <li>
-                  <Link href="/dashboard/sales" className="text-white text-lg">Ventas</Link>
+                  <Link href="/dashboard/sales" className="text-white">Ventas</Link>
                 </li>
                 <li>
-                  <Link href="/dashboard/ingredients" className="text-white text-lg">Ingredientes</Link>
+                  <Link href="/dashboard/ingredients" className="text-white">Ingredientes</Link>
                 </li>
                 <li>
-                  <Link href="/dashboard/products" className="text-white text-lg">Productos</Link>
+                  <Link href="/dashboard/products" className="text-white">Productos</Link>
                 </li>
                 <li>
-                  <Link href="/api/auth/signout" className="text-white text-lg">Logout</Link>
+                  <Link href="/api/auth/signout" className="text-white">Logout</Link>
                 </li>
               </>
             )}
