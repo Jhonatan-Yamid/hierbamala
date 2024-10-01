@@ -64,11 +64,14 @@ model ProductIngredient {
 model Sale {
   id          Int        @id @default(autoincrement())
   totalAmount Float
+  status      String     // Nuevo campo para estado de la venta (ej. "en proceso" o "finalizada")
+  table       Int        // Nuevo campo para la mesa (1-8)
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
   products    SaleProduct[]
 }
+
 
 model SaleProduct {
   saleId    Int

@@ -11,7 +11,9 @@ function SaleForm({
     const [totalAmount, setTotalAmount] = useState(0);
     const [searchTerm, setSearchTerm] = useState(""); 
     const [filteredProducts, setFilteredProducts] = useState([]);
-
+    const [status, setStatus] = useState("en proceso"); // Cambiado de saleStatus a status
+    const [tableNumber, setTableNumber] = useState(""); // Número de mesa
+    console.log(status);
     useEffect(() => {
         const calculatedTotal = selectedProducts.reduce(
             (acc, product) => acc + (product.price || 0) * (product.quantity || 1),
@@ -34,20 +36,20 @@ function SaleForm({
     };
 
     const handleSubmit = (e) => {
-      e.preventDefault();
-      const saleData = {
-          totalAmount,
-          products: selectedProducts.map((product) => ({
-              productId: product.id,
-              quantity: product.quantity,
-          })),
-      };
-      onSubmit(saleData); // Asegúrate de que esto pase el objeto correcto
-  };
-  
-  
+        e.preventDefault();
+        const saleData = {
+            totalAmount,
+            products: selectedProducts.map((product) => ({
+                productId: product.id,
+                quantity: product.quantity,
+            })),
+            status, // Asegúrate de que este nombre sea consistente
+            tableNumber, // Asegúrate de que este nombre sea consistente
+        };
+        onSubmit(saleData);
+    };
+    
 
-    // Filtrar productos según el término de búsqueda
     const handleSearchChange = (e) => {
         const value = e.target.value;
         setSearchTerm(value);
@@ -121,6 +123,31 @@ function SaleForm({
             <div className="flex justify-between text-xl font-semibold mt-4">
                 <span>Total:</span>
                 <span>{totalAmount}</span>
+            </div>
+
+            <div className="mb-4">
+                <label htmlFor="saleStatus" className="block mb-2">Estado de la Venta:</label>
+                <select
+                    id="saleStatus"
+                    value={status}
+                    onChange={(e) => setStatus(e.target.value)}
+                    className="w-full p-2 bg-slate-800 text-slate-200 rounded"
+                >
+                    <option value="en proceso">En Proceso</option>
+                    <option value="finalizada">Finalizada</option>
+                </select>
+            </div>
+
+            <div className="mb-4">
+                <label htmlFor="tableNumber" className="block mb-2">Número de Mesa:</label>
+                <input
+                    type="number"
+                    id="tableNumber"
+                    value={tableNumber}
+                    onChange={(e) => setTableNumber(e.target.value)}
+                    className="w-full p-2 bg-slate-800 text-slate-200 rounded"
+                    placeholder="Número de mesa..."
+                />
             </div>
 
             <button type="submit" className="bg-blue-500 text-white p-2 rounded mt-4">

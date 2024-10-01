@@ -5,7 +5,7 @@ import db from '@/libs/db';
 export async function POST(request) {
   try {
     const data = await request.json();
-    const { totalAmount, products } = data; // Asegúrate de obtener el totalAmount
+    const { totalAmount, products, table, status } = data;
 
     if (!products || products.length === 0) {
       return NextResponse.json(
@@ -44,7 +44,9 @@ export async function POST(request) {
     // Crear la venta
     const sale = await db.sale.create({
       data: {
-        totalAmount: finalTotalAmount, // Usar el totalAmount que has calculado
+        totalAmount: finalTotalAmount,
+        table: parseInt(table, 10),  
+        status, // Añadir el campo de estado
         products: {
           create: saleProducts,
         },
@@ -63,12 +65,11 @@ export async function POST(request) {
 // Handler para el método GET (Obtener todas las ventas)
 export async function GET() {
   try {
-    // Obtener todas las ventas
     const sales = await db.sale.findMany({
       include: {
         products: {
           include: {
-            product: true, // Esto incluye los detalles del producto
+            product: true,
           },
         },
       },
@@ -87,7 +88,7 @@ export async function GET() {
 export async function DELETE(request) {
   try {
     const { searchParams } = new URL(request.url);
-    const saleId = parseInt(searchParams.get('id'), 10); // Castear a int
+    const saleId = parseInt(searchParams.get('id'), 10);
 
     if (isNaN(saleId)) {
       return NextResponse.json(
@@ -96,7 +97,6 @@ export async function DELETE(request) {
       );
     }
 
-    // Verificar si la venta existe
     const existingSale = await db.sale.findUnique({
       where: { id: saleId },
     });
@@ -108,7 +108,6 @@ export async function DELETE(request) {
       );
     }
 
-    // Eliminar la venta
     await db.sale.delete({
       where: { id: saleId },
     });
@@ -125,13 +124,13 @@ export async function DELETE(request) {
   }
 }
 
-
+// Handler para el método PUT (Actualizar una venta)
 export async function PUT(request) {
   try {
     const { searchParams } = new URL(request.url);
     const saleId = parseInt(searchParams.get('id'), 10);
     const data = await request.json();
-    const { totalAmount, products } = data;
+    const { totalAmount, products, table, status } = data;
 
     if (isNaN(saleId)) {
       return NextResponse.json(
@@ -142,7 +141,7 @@ export async function PUT(request) {
 
     const existingSale = await db.sale.findUnique({
       where: { id: saleId },
-      include: { products: true }, // Incluir productos para verificar
+      include: { products: true },
     });
 
     if (!existingSale) {
@@ -156,26 +155,27 @@ export async function PUT(request) {
       where: { id: saleId },
       data: {
         totalAmount,
+        table,  // Actualizar el campo de mesa
+        status, // Actualizar el campo de estado
         products: {
           upsert: products.map(product => ({
             where: {
               saleId_productId: {
                 saleId: saleId,
-                productId: product.productId, // Cambia esto a product.productId
+                productId: product.productId,
               },
             },
             update: {
               quantity: product.quantity,
             },
             create: {
-              productId: product.productId, // Asegúrate de que estás usando product.productId
+              productId: product.productId,
               quantity: product.quantity,
             },
           })),
         },
       },
     });
-    
 
     return NextResponse.json(
       { message: 'Venta actualizada con éxito', sale: updatedSale },
