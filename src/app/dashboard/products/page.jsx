@@ -1,5 +1,5 @@
 "use client";
-import ProductForm from "@/app/components/ProductForm";
+import ProductForm from "@/app/dashboard/products/ProductForm";
 import { useState, useEffect } from "react";
 import ProductItem from "./ProductItem"; // Asegúrate de que la ruta sea correcta
 

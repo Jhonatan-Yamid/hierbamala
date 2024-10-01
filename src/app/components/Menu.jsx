@@ -56,6 +56,9 @@ const Menu = ({ session }) => {
               </>
             ) : (
               <>
+              <li>
+                  <Link href="/dashboard/sales" className="text-white text-lg">Ventas</Link>
+                </li>
                 <li>
                   <Link href="/dashboard/ingredients" className="text-white text-lg">Ingredientes</Link>
                 </li>
