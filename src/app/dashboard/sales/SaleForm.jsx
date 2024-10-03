@@ -112,7 +112,6 @@ function SaleForm({
                         <input
                             type="number"
                             value={product.quantity}
-                            min="0"
                             onChange={(e) => handleQuantityChange(product.id, e.target.value)}
                             className="bg-slate-800 text-slate-200 p-2 rounded w-20"
                         />
