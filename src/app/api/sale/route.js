@@ -155,7 +155,7 @@ export async function PUT(request) {
       where: { id: saleId },
       data: {
         totalAmount,
-        table,  // Actualizar el campo de mesa
+        table: parseInt(table),  // Actualizar el campo de mesa
         status, // Actualizar el campo de estado
         products: {
           upsert: products.map(product => ({

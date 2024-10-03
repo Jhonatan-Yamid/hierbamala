@@ -7,12 +7,14 @@ function SaleForm({
     onRemoveProduct,
     onSubmit,
     products,
+    initialStatus, // Recibir el estado inicial de la venta
+  initialTableNumber, // Recibir el número de mesa inicial
 }) {
     const [totalAmount, setTotalAmount] = useState(0);
     const [searchTerm, setSearchTerm] = useState(""); 
     const [filteredProducts, setFilteredProducts] = useState([]);
-    const [status, setStatus] = useState("en proceso"); // Cambiado de saleStatus a status
-    const [tableNumber, setTableNumber] = useState(""); // Número de mesa
+    const [status, setStatus] = useState(initialStatus || "en proceso"); // Usar el valor inicial
+  const [tableNumber, setTableNumber] = useState(initialTableNumber || ""); // Usar el valor inicial
     console.log(status);
     useEffect(() => {
         const calculatedTotal = selectedProducts.reduce(
@@ -21,6 +23,11 @@ function SaleForm({
         );
         setTotalAmount(calculatedTotal);
     }, [selectedProducts]);
+    useEffect(() => {
+        setStatus(initialStatus || "en proceso"); // Actualizar el estado cuando cambie initialStatus
+        setTableNumber(initialTableNumber || ""); // Actualizar la mesa cuando cambie initialTableNumber
+      }, [initialStatus, initialTableNumber]);
+    
 
     const handleQuantityChange = (id, value) => {
         const newQuantity = parseInt(value, 10);

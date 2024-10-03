@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import { useState, useEffect } from "react";
 import { FaCashRegister } from "react-icons/fa"; // Importar el ícono de caja registradora
 import SaleForm from "./SaleForm";
@@ -10,6 +10,8 @@ function SaleTable() {
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [editingSale, setEditingSale] = useState(null); // Para editar una venta
   const [isNewSale, setIsNewSale] = useState(false); // Para crear una nueva venta
+  const [editingStatus, setEditingStatus] = useState(""); // Para el estado de la venta
+const [editingTableNumber, setEditingTableNumber] = useState("");
 
   // Función para obtener la fecha de hoy sin la hora (solo día, mes y año)
   const getTodayDate = () => {
@@ -76,11 +78,18 @@ function SaleTable() {
     } else {
       setSelectedProducts([]); // En caso de que no haya productos
     }
-
+  
+    // Setear el estado de la venta y el número de mesa
     setEditingSale(parseInt(sale.id)); // Guardar la venta que se está editando
     setIsNewSale(true);
+    
+    // Aquí debes actualizar el estado y la mesa en SaleForm
+    setEditingStatus(sale.status); // Nuevo estado para 'status'
+    setEditingTableNumber(sale.table); // Nuevo estado para 'tableNumber'
+  
     document.body.style.overflow = "hidden"; // Deshabilitar scroll
   };
+  
 
   const handleDeleteSale = async (saleId) => {
     if (confirm("¿Estás seguro de que deseas eliminar esta venta?")) {
@@ -117,41 +126,43 @@ function SaleTable() {
     );
   };
 
-// ...el resto del código permanece igual...
+  // ...el resto del código permanece igual...
 
-const handleSaleSubmit = async (saleData) => {
-  const saleId = editingSale;
+  const handleSaleSubmit = async (saleData) => {
+    const saleId = editingSale;
 
-  const url = saleId ? `/api/sale?id=${saleId}` : `/api/sale`; // Usar POST para nuevas ventas
-  const method = saleId ? "PUT" : "POST"; // Usar PUT para actualizar y POST para crear
-  console.log(saleData);
-  const sanitizedSaleData = {
+    const url = saleId ? `/api/sale?id=${saleId}` : `/api/sale`; // Usar POST para nuevas ventas
+    const method = saleId ? "PUT" : "POST"; // Usar PUT para actualizar y POST para crear
+    console.log(saleData);
+    const sanitizedSaleData = {
       totalAmount: saleData.totalAmount,
-      products: saleData.products.map(({ productId, quantity }) => ({ productId, quantity })), // Asegúrate de que solo estás enviando lo necesario
+      products: saleData.products.map(({ productId, quantity }) => ({
+        productId,
+        quantity,
+      })), // Asegúrate de que solo estás enviando lo necesario
       status: saleData.status, // Asegúrate de que estás utilizando el nombre correcto aquí
       table: saleData.tableNumber, // Asegúrate de que estás utilizando el nombre correcto aquí
-  };
+    };
 
-  const response = await fetch(url, {
+    const response = await fetch(url, {
       method,
       headers: {
-          "Content-Type": "application/json",
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(sanitizedSaleData), // Utiliza el objeto sanitizado aquí
-  });
+    });
 
-  if (!response.ok) {
+    if (!response.ok) {
       console.error("Error en la solicitud:", response.statusText);
-  } else {
+    } else {
       console.log("Venta enviada con éxito");
       // Cierra el formulario después de guardar
       handleCloseForm();
       // Actualiza la lista de ventas (opcional, podrías hacerlo con un fetch)
-  }
-};
+    }
+  };
 
-
-// ...el resto del componente permanece igual...
+  // ...el resto del componente permanece igual...
 
   return (
     <div className="p-6">
@@ -167,55 +178,58 @@ const handleSaleSubmit = async (saleData) => {
 
       {/* Listado de ventas */}
       <div className="flex flex-col gap-4 border-solid border rounded-md border-gray-600 p-5">
-        <h1 className="text-slate-200 font-medium text-xl">Listado de Ventas</h1>
+        <h1 className="text-slate-200 font-medium text-xl">
+          Listado de Ventas
+        </h1>
         {sales.length === 0 ? (
-  <p className="text-slate-200">No hay ventas registradas</p>
-) : (
-  sales.map((sale) => (
-    <div
-      key={sale.id}
-      className="flex items-center mb-4 cursor-pointer"
-      onClick={() => handleEditSale(sale)}
-    >
-      <div className="flex items-center justify-center w-14 h-14 bg-gray-800 rounded-md mr-4">
-        <FaCashRegister className="text-white" size={20} />
-      </div>
-      <div className="flex justify-between w-full">
-        <div>
-          <h2 className="text-slate-200 text-xl font-semibold">
-            Venta - {new Date(sale.updatedAt).toLocaleDateString("es-CL")}
-          </h2>
-          <span className="text-slate-300 text-sm">
-            Productos: {sale.products?.length || 0} 
-          </span>
-          <div className="text-slate-300 text-sm">
-            Mesa: {sale.table} | Estado: {sale.status}
-          </div>
-        </div>
-        <div className="flex items-center">
-          <span className="text-slate-200 text-lg font-semibold mr-2">
-            Total:
-          </span>
-          <span className="text-slate-300 text-lg font-semibold">
-            {new Intl.NumberFormat("es-CL", {
-              style: "currency",
-              currency: "CLP",
-            }).format(sale.totalAmount)}
-          </span>
-          <button
-            onClick={(e) => {
-              e.stopPropagation(); // Evita que el evento de clic se propague
-              handleDeleteSale(sale.id);
-            }}
-            className="text-gray-600 hover:text-gray-200 text-3xl ml-4"
-          >
-            &times;
-          </button>
-        </div>
-      </div>
-    </div>
-  ))
-)}
+          <p className="text-slate-200">No hay ventas registradas</p>
+        ) : (
+          sales.map((sale) => (
+            <div
+              key={sale.id}
+              className="flex items-center mb-4 cursor-pointer"
+              onClick={() => handleEditSale(sale)}
+            >
+              <div className="flex items-center justify-center w-14 h-14 bg-gray-800 rounded-md mr-4">
+                <FaCashRegister className="text-white" size={20} />
+              </div>
+              <div className="flex justify-between w-full">
+                <div>
+                  <h2 className="text-slate-200 text-xl font-semibold">
+                    Venta -{" "}
+                    {new Date(sale.updatedAt).toLocaleDateString("es-CL")}
+                  </h2>
+                  <span className="text-slate-300 text-sm">
+                    Productos: {sale.products?.length || 0}
+                  </span>
+                  <div className="text-slate-300 text-sm">
+                    Mesa: {sale.table} | Estado: {sale.status}
+                  </div>
+                </div>
+                <div className="flex items-center">
+                  <span className="text-slate-200 text-lg font-semibold mr-2">
+                    Total:
+                  </span>
+                  <span className="text-slate-300 text-lg font-semibold">
+                    {new Intl.NumberFormat("es-CL", {
+                      style: "currency",
+                      currency: "CLP",
+                    }).format(sale.totalAmount)}
+                  </span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation(); // Evita que el evento de clic se propague
+                      handleDeleteSale(sale.id);
+                    }}
+                    className="text-gray-600 hover:text-gray-200 text-3xl ml-4"
+                  >
+                    &times;
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       {/* Mostrar formulario de nueva venta o edición */}
@@ -236,14 +250,17 @@ const handleSaleSubmit = async (saleData) => {
               </button>
             </div>
             <div className="h-full overflow-y-auto">
-              <SaleForm
-                selectedProducts={selectedProducts}
-                onAddProduct={handleAddProduct}
-                onUpdateQuantity={handleUpdateQuantity}
-                onRemoveProduct={handleRemoveProduct}
-                onSubmit={handleSaleSubmit}
-                products={products} // Pasar los productos disponibles al formulario
-              />
+            <SaleForm
+  selectedProducts={selectedProducts}
+  onAddProduct={handleAddProduct}
+  onUpdateQuantity={handleUpdateQuantity}
+  onRemoveProduct={handleRemoveProduct}
+  onSubmit={handleSaleSubmit}
+  products={products} // Pasar los productos disponibles al formulario
+  initialStatus={editingStatus} // Pasa el estado de la venta
+  initialTableNumber={editingTableNumber} // Pasa el número de mesa de la venta
+/>
+
             </div>
           </div>
         </div>

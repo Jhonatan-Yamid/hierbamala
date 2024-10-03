@@ -30,8 +30,8 @@ const Menu = ({ session }) => {
               <Image
                 src="/logo-white.png"
                 alt="Logo"
-                width={200}
-                height={200}
+                width={180}
+                height={180}
                 className="mr-3"
               />
             </Link>
@@ -40,7 +40,7 @@ const Menu = ({ session }) => {
             </button>
           </div>        
           {/* Opciones del menú */}
-          <ul className="flex flex-col gap-y-4 p-4 flex-1 text-3xl space-y-8">
+          <ul className="flex flex-col gap-y-4 p-4 flex-1 text-xl space-y-8">
             {!session?.user ? (
               <>
                 <li>
