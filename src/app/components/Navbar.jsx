@@ -51,44 +51,43 @@ async function Navbar() {
           </>
         ) : (
           <>
-            {session?.user?.image == 3 ? (
+            {session?.user?.image !== 1 ? (
               <>
-              <li>
-                <Link href="/dashboard/IngredientInventory">Inventario</Link>
-              </li>
-              <li>
-                <Link
-                  href="/api/auth/signout"
-                  className="bg-emerald-700 text-white px-4 py-2 rounded-md hover:bg-emerald-500 transition-colors"
-                >
-                  Logout
-                </Link>
-              </li>
-            </>
+                <li>
+                  <Link href="/dashboard/sales">Ventas</Link>
+                </li>
+                <li>
+                  <Link href="/dashboard/ingredients">Ingredientes</Link>
+                </li>
+                <li>
+                  <Link href="/dashboard/products">Productos</Link>
+                </li>
+                <li>
+                  <Link href="/dashboard/IngredientInventory">Inventario</Link>
+                </li>
+                <li>
+                  <Link
+                    href="/api/auth/signout"
+                    className="bg-emerald-700 text-white px-4 py-2 rounded-md hover:bg-emerald-500 transition-colors"
+                  >
+                    Logout
+                  </Link>
+                </li>
+              </>
             ) : (
               <>
-              <li>
-                <Link href="/dashboard/sales">Ventas</Link>
-              </li>
-              <li>
-                <Link href="/dashboard/ingredients">Ingredientes</Link>
-              </li>
-              <li>
-                <Link href="/dashboard/products">Productos</Link>
-              </li>
-              <li>
-                <Link href="/dashboard/IngredientInventory">Inventario</Link>
-              </li>
-              <li>
-                <Link
-                  href="/api/auth/signout"
-                  className="bg-emerald-700 text-white px-4 py-2 rounded-md hover:bg-emerald-500 transition-colors"
-                >
-                  Logout
-                </Link>
-              </li>
-            </>
-             
+                <li>
+                  <Link href="/dashboard/IngredientInventory">Inventario</Link>
+                </li>
+                <li>
+                  <Link
+                    href="/api/auth/signout"
+                    className="bg-emerald-700 text-white px-4 py-2 rounded-md hover:bg-emerald-500 transition-colors"
+                  >
+                    Logout
+                  </Link>
+                </li>
+              </>
             )}
           </>
         )}
