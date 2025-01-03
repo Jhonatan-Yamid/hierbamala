@@ -36,28 +36,24 @@ export async function POST(request) {
 export async function PUT(request) {
   try {
     const data = await request.json();
-    const { id, name, description, quantity, price, typeUnity } = data;
 
-    if (!id) {
-      return NextResponse.json({ message: 'ID del ingredient es requerido' }, { status: 400 });
+    for (const ingredient of data) {
+      const { id, quantity } = ingredient;
+      await db.ingredient.update({
+        where: { id: parseInt(id) },
+        data: { quantity: parseInt(quantity) },
+      });
     }
 
-    const updatedIngredient = await db.ingredient.update({
-      where: { id: parseInt(id) },
-      data: {
-        name,
-        description,
-        quantity: parseInt(quantity),
-        price: parseInt(price),
-        typeUnity,
-      },
-    });
-
-    return NextResponse.json(updatedIngredient, { status: 200 });
+    return NextResponse.json(
+      { message: "Ingredientes actualizados correctamente" },
+      { status: 200 }
+    );
   } catch (error) {
     return NextResponse.json({ message: error.message }, { status: 500 });
   }
 }
+
 
 export async function DELETE(request) {
   try {
