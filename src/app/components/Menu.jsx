@@ -13,9 +13,12 @@ const Menu = ({ session }) => {
     setIsOpen(!isOpen);
   };
 
+  const closeMenu = () => {
+    setIsOpen(false); // Cierra el menú al seleccionar una opción
+  };
+
   return (
     <div className="flex md:hidden justify-between items-center w-full">
-      {" "}
       {/* Contenedor para dispositivos móviles */}
       {/* Ícono de menú hamburguesa alineado a la derecha */}
       <button onClick={toggleMenu} className="text-white">
@@ -44,17 +47,17 @@ const Menu = ({ session }) => {
             {!session?.user ? (
               <>
                 <li>
-                  <Link href="/" className="text-white">
+                  <Link href="/" className="text-white" onClick={closeMenu}>
                     Home
                   </Link>
                 </li>
                 <li>
-                  <Link href="/auth/login" className="text-white">
+                  <Link href="/auth/login" className="text-white" onClick={closeMenu}>
                     Login
                   </Link>
                 </li>
                 <li>
-                  <Link href="/auth/register" className="text-white">
+                  <Link href="/auth/register" className="text-white" onClick={closeMenu}>
                     Register
                   </Link>
                 </li>
@@ -64,39 +67,33 @@ const Menu = ({ session }) => {
                 {session?.user?.image !== 1 ? (
                   <>
                     <li>
-                      <Link href="/dashboard/sales" className="text-white">
+                      <Link href="/dashboard/sales" className="text-white" onClick={closeMenu}>
                         Ventas
                       </Link>
                     </li>
                     <li>
-                      <Link
-                        href="/dashboard/ingredients"
-                        className="text-white"
-                      >
+                      <Link href="/dashboard/ingredients" className="text-white" onClick={closeMenu}>
                         Ingredientes
                       </Link>
                     </li>
                     <li>
-                      <Link href="/dashboard/products" className="text-white">
+                      <Link href="/dashboard/products" className="text-white" onClick={closeMenu}>
                         Productos
                       </Link>
                     </li>
                     <li>
-                      <Link href="/api/auth/signout" className="text-white">
+                      <Link href="/api/auth/signout" className="text-white" onClick={closeMenu}>
                         Logout
                       </Link>
                     </li>
                   </>
                 ) : (
                   <>
-                    <Link
-                      href="/dashboard/IngredientInventory"
-                      className="text-white"
-                    >
+                    <Link href="/dashboard/IngredientInventory" className="text-white" onClick={closeMenu}>
                       Inventario
                     </Link>
                     <li>
-                      <Link href="/api/auth/signout" className="text-white">
+                      <Link href="/api/auth/signout" className="text-white" onClick={closeMenu}>
                         Logout
                       </Link>
                     </li>

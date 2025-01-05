@@ -37,22 +37,51 @@ export async function PUT(request) {
   try {
     const data = await request.json();
 
-    for (const ingredient of data) {
-      const { id, quantity } = ingredient;
-      await db.ingredient.update({
-        where: { id: parseInt(id) },
-        data: { quantity: parseInt(quantity) },
-      });
+    if (!Array.isArray(data)) {
+      return NextResponse.json(
+        { message: "Datos inválidos, se esperaba un arreglo." },
+        { status: 400 }
+      );
     }
+
+    // Validar que cada elemento tenga los campos necesarios
+    for (const { id, quantity } of data) {
+      if (typeof id !== "number" || typeof quantity !== "number") {
+        return NextResponse.json(
+          { message: "Todos los elementos deben tener un 'id' y 'quantity' numéricos." },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Crear la actualización en bloque utilizando la sentencia CASE
+    const updates = data
+      .map(({ id, quantity }) => {
+        return `WHEN id = ${id} THEN ${quantity}`;
+      })
+      .join(" ");
+
+    const query = `
+      UPDATE \`Ingredient\`
+      SET \`quantity\` = CASE
+        ${updates}
+      END
+      WHERE id IN (${data.map(({ id }) => id).join(", ")})
+    `;
+
+    // Ejecutar la consulta
+    await db.$executeRawUnsafe(query);
 
     return NextResponse.json(
       { message: "Ingredientes actualizados correctamente" },
       { status: 200 }
     );
   } catch (error) {
+    console.error("Error actualizando ingredientes:", error);
     return NextResponse.json({ message: error.message }, { status: 500 });
   }
 }
+
 
 
 export async function DELETE(request) {
