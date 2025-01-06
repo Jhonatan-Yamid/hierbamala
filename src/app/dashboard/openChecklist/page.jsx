@@ -29,7 +29,6 @@ const OpenChecklist = () => {
     "Precalentar el asador en fuego bajo",
     "Barrer cera y sacar la tijera",
     "Colocar cartel promoción o redibujarlo después de terminar el Mise en Place de ser necesario",
-    
   ];
 
   const [checkedItems, setCheckedItems] = useState(
@@ -56,10 +55,11 @@ const OpenChecklist = () => {
           {checklistItems.map((item, index) => (
             <div
               key={index}
-              className="flex items-center space-x-3 p-3 rounded-lg bg-gray-800 border border-gray-700"
+              className="flex items-center space-x-3 p-3 rounded-lg bg-gray-800 border border-gray-700 cursor-pointer"
               style={{
                 minHeight: "80px", // Altura mínima uniforme
               }}
+              onClick={() => toggleCheckbox(index)} // Permite marcar el checkbox al hacer clic en el recuadro
             >
               <input
                 type="checkbox"
