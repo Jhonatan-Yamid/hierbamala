@@ -66,6 +66,9 @@ async function Navbar() {
                   <Link href="/dashboard/IngredientInventory">Inventario</Link>
                 </li>
                 <li>
+                  <Link href="/dashboard/openChecklist">Apertura</Link>
+                </li>
+                <li>
                   <Link
                     href="/api/auth/signout"
                     className="bg-emerald-700 text-white px-4 py-2 rounded-md hover:bg-emerald-500 transition-colors"
@@ -78,6 +81,9 @@ async function Navbar() {
               <>
                 <li>
                   <Link href="/dashboard/IngredientInventory">Inventario</Link>
+                </li>
+                <li>
+                  <Link href="/dashboard/openChecklist">Apertura</Link>
                 </li>
                 <li>
                   <Link

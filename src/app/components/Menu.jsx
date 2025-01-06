@@ -52,12 +52,20 @@ const Menu = ({ session }) => {
                   </Link>
                 </li>
                 <li>
-                  <Link href="/auth/login" className="text-white" onClick={closeMenu}>
+                  <Link
+                    href="/auth/login"
+                    className="text-white"
+                    onClick={closeMenu}
+                  >
                     Login
                   </Link>
                 </li>
                 <li>
-                  <Link href="/auth/register" className="text-white" onClick={closeMenu}>
+                  <Link
+                    href="/auth/register"
+                    className="text-white"
+                    onClick={closeMenu}
+                  >
                     Register
                   </Link>
                 </li>
@@ -67,33 +75,82 @@ const Menu = ({ session }) => {
                 {session?.user?.image !== 1 ? (
                   <>
                     <li>
-                      <Link href="/dashboard/sales" className="text-white" onClick={closeMenu}>
+                      <Link
+                        href="/dashboard/sales"
+                        className="text-white"
+                        onClick={closeMenu}
+                      >
                         Ventas
                       </Link>
                     </li>
                     <li>
-                      <Link href="/dashboard/ingredients" className="text-white" onClick={closeMenu}>
+                      <Link
+                        href="/dashboard/ingredients"
+                        className="text-white"
+                        onClick={closeMenu}
+                      >
                         Ingredientes
                       </Link>
                     </li>
                     <li>
-                      <Link href="/dashboard/products" className="text-white" onClick={closeMenu}>
+                      <Link
+                        href="/dashboard/products"
+                        className="text-white"
+                        onClick={closeMenu}
+                      >
                         Productos
                       </Link>
                     </li>
                     <li>
-                      <Link href="/api/auth/signout" className="text-white" onClick={closeMenu}>
+                      <Link
+                        href="/dashboard/IngredientInventory"
+                        className="text-white"
+                        onClick={closeMenu}
+                      >
+                        Inventario
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/dashboard/openChecklist"
+                        className="text-white"
+                        onClick={closeMenu}
+                      >
+                        Apertura
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/api/auth/signout"
+                        className="text-white"
+                        onClick={closeMenu}
+                      >
                         Logout
                       </Link>
                     </li>
                   </>
                 ) : (
                   <>
-                    <Link href="/dashboard/IngredientInventory" className="text-white" onClick={closeMenu}>
+                    <Link
+                      href="/dashboard/IngredientInventory"
+                      className="text-white"
+                      onClick={closeMenu}
+                    >
                       Inventario
                     </Link>
+                    <Link
+                      href="/dashboard/openChecklist"
+                      className="text-white"
+                      onClick={closeMenu}
+                    >
+                      Apertura
+                    </Link>
                     <li>
-                      <Link href="/api/auth/signout" className="text-white" onClick={closeMenu}>
+                      <Link
+                        href="/api/auth/signout"
+                        className="text-white"
+                        onClick={closeMenu}
+                      >
                         Logout
                       </Link>
                     </li>
