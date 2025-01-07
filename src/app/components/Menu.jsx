@@ -72,7 +72,7 @@ const Menu = ({ session }) => {
               </>
             ) : (
               <>
-                {session?.user?.image !== 1 ? (
+                {session?.user?.image === 1 ? (
                   <>
                     <li>
                       <Link
@@ -117,6 +117,15 @@ const Menu = ({ session }) => {
                         onClick={closeMenu}
                       >
                         Apertura
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/dashboard/providers"
+                        className="text-white"
+                        onClick={closeMenu}
+                      >
+                        Proveedores
                       </Link>
                     </li>
                     <li>

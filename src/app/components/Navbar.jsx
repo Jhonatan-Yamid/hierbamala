@@ -8,14 +8,14 @@ async function Navbar() {
   const session = await getServerSession(authOptions);
 
   return (
-    <nav className="flex justify-between items-center bg-gray-950 text-white px-4 md:px-24 py-2">
+    <nav className="flex justify-between items-center bg-gray-950 text-white px-4 md:px-12 py-2 text-sm">
       <div className="hidden md:flex">
         <Link href="/dashboard">
           <Image
             src="/logo-white.png"
             alt="Logo"
-            width={120}
-            height={120}
+            width={100}
+            height={100}
             className="mr-3"
           />
         </Link>
@@ -51,22 +51,25 @@ async function Navbar() {
           </>
         ) : (
           <>
-            {session?.user?.image !== 1 ? (
+            {session?.user?.image === 1 ? (
               <>
                 <li>
                   <Link href="/dashboard/sales">Ventas</Link>
-                </li>
-                <li>
-                  <Link href="/dashboard/ingredients">Ingredientes</Link>
-                </li>
-                <li>
-                  <Link href="/dashboard/products">Productos</Link>
                 </li>
                 <li>
                   <Link href="/dashboard/IngredientInventory">Inventario</Link>
                 </li>
                 <li>
                   <Link href="/dashboard/openChecklist">Apertura</Link>
+                </li>
+                <li>
+                  <Link href="/dashboard/providers">Proveedores</Link>
+                </li>
+                <li>
+                  <Link href="/dashboard/ingredients">Ingredientes</Link>
+                </li>
+                <li>
+                  <Link href="/dashboard/products">Productos</Link>
                 </li>
                 <li>
                   <Link

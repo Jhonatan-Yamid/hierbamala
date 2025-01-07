@@ -1,86 +1,86 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+  provider          = "mysql"
+  url               = env("DATABASE_URL")
   shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
 model User {
-  id Int @id @default(autoincrement())
-  email String @unique
-  username String @unique
-  password String
-  role Int?
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  username  String   @unique
+  password  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  role      Int?
 }
 
 model Ingredient {
-  id          Int     @id @default(autoincrement())
+  id          Int                 @id @default(autoincrement())
   name        String
   description String?
   price       Int
-  quantity    Int
+  quantity    Float?
   typeUnity   String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  Origin      String @default("Desconocido")
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  Origin      String              @default("Desconocido")
   products    ProductIngredient[]
 }
 
 model Product {
-  id          Int     @id @default(autoincrement())
+  id          Int                 @id @default(autoincrement())
   name        String
   description String?
   price       Float
-  category    String   @default("Desconocida")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  category    String              @default("Desconocida")
   ingredients ProductIngredient[]
-  sales       SaleProduct[] // Relación inversa
+  sales       SaleProduct[]
 }
 
 model ProductIngredient {
-  productId   Int
+  productId    Int
   ingredientId Int
-  quantity    Int
-  createdAt   DateTime @default(now())
-
-  product     Product    @relation(fields: [productId], references: [id])
-  ingredient  Ingredient @relation(fields: [ingredientId], references: [id])
+  quantity     Int
+  createdAt    DateTime   @default(now())
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+  product      Product    @relation(fields: [productId], references: [id])
 
   @@id([productId, ingredientId])
+  @@index([ingredientId], map: "ProductIngredient_ingredientId_fkey")
 }
 
 model Sale {
-  id          Int        @id @default(autoincrement())
+  id          Int           @id @default(autoincrement())
   totalAmount Float
-  status      String     // Nuevo campo para estado de la venta (ej. "en proceso" o "finalizada")
-  table       Int        // Nuevo campo para la mesa (1-8)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  status      String
+  table       Int
   products    SaleProduct[]
 }
-
 
 model SaleProduct {
   saleId    Int
   productId Int
   quantity  Int
-
-  sale     Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade) // Agregar onDelete: Cascade
-  product  Product @relation(fields: [productId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
+  sale      Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
 
   @@id([saleId, productId])
+  @@index([productId], map: "SaleProduct_productId_fkey")
+}
+
+model Provider {
+  id            Int      @id @default(autoincrement())
+  name          String
+  description   String?
+  accountNumber String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }

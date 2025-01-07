@@ -5,81 +5,109 @@ import React, { useState, useEffect } from "react";
 const IngredientInventory = () => {
   const [ingredients, setIngredients] = useState([]);
   const [groupedIngredients, setGroupedIngredients] = useState({});
-  const [modifiedFields, setModifiedFields] = useState(new Map()); // Map para almacenar ID y cantidad modificada
-  const [searchTerm, setSearchTerm] = useState(""); // Estado para el término de búsqueda
+  const [modifiedFields, setModifiedFields] = useState(new Map());
+  const [searchTerm, setSearchTerm] = useState("");
 
-  // Obtener la fecha actual
-  const getCurrentDate = () => new Date().toISOString().split("T")[0]; // Solo fecha, sin hora
+  const getCurrentDate = () => new Date().toISOString().split("T")[0];
 
-  // Calcular la diferencia en días
   const daysAgo = (date) => {
-    const today = new Date(); // Fecha actual
-    const lastUpdated = new Date(date); // Fecha de última actualización
-
-    // Ajustar ambas fechas al inicio del día (00:00:00)
+    const today = new Date();
+    const lastUpdated = new Date(date);
     today.setHours(0, 0, 0, 0);
     lastUpdated.setHours(0, 0, 0, 0);
-
-    // Calcular la diferencia en milisegundos
-    const diffTime = today - lastUpdated;
-
-    // Calcular la diferencia en días
-    const diffDays = Math.floor(diffTime / (1000 * 3600 * 24));
-
-    return diffDays;
+    return Math.floor((today - lastUpdated) / (1000 * 3600 * 24));
   };
 
-  // Fetch ingredients from the API
   useEffect(() => {
     const fetchIngredients = async () => {
       try {
         const response = await fetch("/api/ingredient");
         const data = await response.json();
-        setIngredients(data);
+        if (Array.isArray(data)) {
+          setIngredients(data);
 
-        // Agrupar ingredientes por origen
-        const grouped = data.reduce((acc, ingredient) => {
-          const { Origin } = ingredient;
-          if (!acc[Origin]) acc[Origin] = [];
-          acc[Origin].push(ingredient);
-          return acc;
-        }, {});
-        setGroupedIngredients(grouped);
+          const grouped = data.reduce((acc, ingredient) => {
+            const { Origin } = ingredient;
+            if (!acc[Origin]) acc[Origin] = [];
+            acc[Origin].push(ingredient);
+            return acc;
+          }, {});
+          setGroupedIngredients(grouped);
+        } else {
+          console.error("El formato de los datos no es válido:", data);
+        }
       } catch (error) {
         console.error("Error fetching ingredients:", error);
       }
     };
-
     fetchIngredients();
   }, []);
 
-  // Actualizar la cantidad de un ingrediente
   const handleQuantityChange = (e, ingredientId) => {
-    const newQuantity = e.target.value ? parseInt(e.target.value, 10) : 0;
+    const newValue = e.target.value;
 
-    // Actualizar ingredientes
     setIngredients((prev) =>
       prev.map((ingredient) =>
         ingredient.id === ingredientId
-          ? { ...ingredient, quantity: newQuantity }
+          ? { ...ingredient, quantity: newValue }
           : ingredient
       )
     );
 
-    // Marcar como modificado
-    setModifiedFields((prev) => {
-      const updated = new Map(prev);
-      updated.set(ingredientId, newQuantity);
-      return updated;
-    });
-
-    // Reagrupar los ingredientes para forzar re-renderización
     setGroupedIngredients((prev) => {
       const updatedGrouped = { ...prev };
       Object.keys(updatedGrouped).forEach((origin) => {
         updatedGrouped[origin] = updatedGrouped[origin].map((ingredient) =>
           ingredient.id === ingredientId
-            ? { ...ingredient, quantity: newQuantity }
+            ? { ...ingredient, quantity: newValue }
+            : ingredient
+        );
+      });
+      return updatedGrouped;
+    });
+
+    // Marcar como modificado
+    setModifiedFields((prev) => {
+      const updated = new Map(prev);
+      updated.set(ingredientId, true);
+      return updated;
+    });
+  };
+
+  const handleQuantityBlur = (e, ingredientId) => {
+    const finalValue = e.target.value.trim();
+
+    if (!/^(\d+(\.\d{0,2})?|Insuficiente)?$/.test(finalValue)) {
+      alert("Por favor, ingresa un valor válido (número o 'Insuficiente').");
+      return;
+    }
+
+    setIngredients((prev) =>
+      prev.map((ingredient) =>
+        ingredient.id === ingredientId
+          ? {
+              ...ingredient,
+              quantity: finalValue === "Insuficiente" ? null : parseFloat(finalValue) || 0,
+            }
+          : ingredient
+      )
+    );
+
+    setModifiedFields((prev) => {
+      const updated = new Map(prev);
+      updated.set(ingredientId, true);
+      return updated;
+    });
+
+    setGroupedIngredients((prev) => {
+      const updatedGrouped = { ...prev };
+      Object.keys(updatedGrouped).forEach((origin) => {
+        updatedGrouped[origin] = updatedGrouped[origin].map((ingredient) =>
+          ingredient.id === ingredientId
+            ? {
+                ...ingredient,
+                quantity: finalValue === "Insuficiente" ? null : parseFloat(finalValue) || 0,
+              }
             : ingredient
         );
       });
@@ -87,20 +115,22 @@ const IngredientInventory = () => {
     });
   };
 
-  // Filtrar los ingredientes por nombre según el término de búsqueda
   const filteredIngredients = ingredients.filter((ingredient) =>
     ingredient.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Enviar datos al backend
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Preparar solo los ingredientes modificados
-    const modifiedData = Array.from(modifiedFields.entries()).map(([id, quantity]) => ({
-      id,
-      quantity,
-    }));
+    const modifiedData = Array.from(modifiedFields.entries())
+      .filter(([, modified]) => modified)
+      .map(([id]) => {
+        const ingredient = ingredients.find((ing) => ing.id === id);
+        return {
+          id,
+          quantity: ingredient.quantity,
+        };
+      });
 
     try {
       const response = await fetch("/api/ingredient", {
@@ -111,7 +141,7 @@ const IngredientInventory = () => {
 
       if (response.ok) {
         alert("Inventario actualizado exitosamente.");
-        window.location.reload(); // Opcional: Recargar la página
+        window.location.reload();
       } else {
         const errorData = await response.json();
         alert(`Error: ${errorData.message}`);
@@ -126,55 +156,63 @@ const IngredientInventory = () => {
       <h1 className="text-2xl font-bold mb-4 text-slate-200">
         Inventario de Ingredientes
       </h1>
-
-      {/* Campo de búsqueda */}
       <input
         type="text"
         placeholder="Buscar ingrediente..."
         className="mb-6 p-2 rounded border border-white text-slate-200 bg-gray-700"
         value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)} // Actualizar el término de búsqueda
+        onChange={(e) => setSearchTerm(e.target.value)}
       />
-
       <form onSubmit={handleSubmit} className="space-y-6">
         {Object.keys(groupedIngredients).map((origin) => (
           <div
             key={origin}
             className="relative p-4 rounded-lg border border-white bg-gray-950 mb-6"
           >
-            {/* Título de la sección en una línea separada */}
             <div className="mb-3">
               <h2 className="text-slate-200 text-xl font-semibold">{origin}</h2>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {filteredIngredients
-                .filter((ingredient) => ingredient.Origin === origin) // Filtrar por origen
+                .filter((ingredient) => ingredient.Origin === origin)
                 .map((ingredient) => {
+                  const isModified = modifiedFields.get(ingredient.id) || false;
                   const lastUpdated = ingredient.updatedAt;
                   const daysSinceUpdate = daysAgo(lastUpdated);
                   return (
                     <div key={ingredient.id} className="flex flex-col">
-                      <label
-                        className={`text-sm font-medium mb-1 ${
-                          modifiedFields.has(ingredient.id)
-                            ? "text-red-500"
-                            : "text-slate-300"
-                        }`}
-                      >
-                        {ingredient.name}{" "}
-                        <small className="text-[0.6rem] font-normal text-slate-400">
-                          {daysSinceUpdate === 0
-                            ? "(Hoy)"
-                            : `(Hace ${daysSinceUpdate} día${
-                                daysSinceUpdate > 1 ? "s)" : ")"
-                              }`}
-                        </small>
-                      </label>
+                      <div className="flex justify-between items-center mb-1">
+                        <div className={`text-sm font-medium ${
+                          isModified ? "text-red-500" : "text-slate-300"
+                        } `}>
+                          {ingredient.name}{" "}
+                          <small className="text-[0.6rem] font-normal text-slate-400">
+                            {ingredient.typeUnity}
+                          </small>
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          <small className="text-[0.6rem] font-normal text-slate-400">
+                            {daysSinceUpdate === 0
+                              ? "(Hoy)"
+                              : `(Hace ${daysSinceUpdate} día${
+                                  daysSinceUpdate > 1 ? "s)" : ")"
+                                }`}
+                          </small>
+                        </div>
+                      </div>
                       <input
-                        type="number"
-                        value={ingredient.quantity || ""}
+                        type="text"
+                        value={
+                          ingredient.quantity === null
+                            ? "Insuficiente"
+                            : ingredient.quantity
+                        }
                         onChange={(e) => handleQuantityChange(e, ingredient.id)}
-                        className="border border-white p-2 rounded bg-gray-700 text-slate-200"
+                        onBlur={(e) => handleQuantityBlur(e, ingredient.id)}
+                        placeholder="Número o Insuficiente"
+                        className={`border p-2 rounded bg-gray-700 text-slate-200 ${
+                          isModified ? "border-red-500" : "border-white"
+                        }`}
                       />
                     </div>
                   );

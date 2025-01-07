@@ -3,8 +3,8 @@ import db from '@/libs/db';
 
 export async function GET(request) {
   try {
-    const ingredient = await db.ingredient.findMany();
-    return NextResponse.json(ingredient, { status: 200 });
+    const ingredients = await db.ingredient.findMany();
+    return NextResponse.json(ingredients, { status: 200 });
   } catch (error) {
     return NextResponse.json({ message: error.message }, { status: 500 });
   }
@@ -18,18 +18,15 @@ export async function POST(request) {
       data: {
         name: data.name,
         description: data.description,
-        quantity: parseInt(data.quantity),
-        price: parseInt(data.price),
+        quantity: data.quantity === "insuficiente" ? null : parseFloat(data.quantity),
+        price: parseFloat(data.price),
         typeUnity: data.typeUnity,
       },
     });
 
     return NextResponse.json(createdIngredient, { status: 201 });
   } catch (error) {
-    return NextResponse.json(
-      { message: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ message: error.message }, { status: 500 });
   }
 }
 
@@ -44,36 +41,29 @@ export async function PUT(request) {
       );
     }
 
-    // Validar que cada elemento tenga los campos necesarios
     for (const { id, quantity } of data) {
-      if (typeof id !== "number" || typeof quantity !== "number") {
+      if (typeof id !== "number" || (typeof quantity !== "string" && typeof quantity !== "number" && quantity !== null)) {
         return NextResponse.json(
-          { message: "Todos los elementos deben tener un 'id' y 'quantity' numéricos." },
+          { message: "Todos los elementos deben tener un 'id' y 'quantity' válidos." },
           { status: 400 }
         );
       }
     }
 
-    // Crear la actualización en bloque utilizando la sentencia CASE
-    const updates = data
-      .map(({ id, quantity }) => {
-        return `WHEN id = ${id} THEN ${quantity}`;
+    await Promise.all(
+      data.map(async ({ id, quantity }) => {
+        await db.ingredient.update({
+          where: { id },
+          data: {
+            quantity: quantity === "insuficiente" ? null : parseFloat(quantity),
+            updatedAt: new Date(),
+          },
+        });
       })
-      .join(" ");
-
-    const query = `
-      UPDATE \`Ingredient\`
-      SET \`quantity\` = CASE
-        ${updates}
-      END
-      WHERE id IN (${data.map(({ id }) => id).join(", ")})
-    `;
-
-    // Ejecutar la consulta
-    await db.$executeRawUnsafe(query);
+    );
 
     return NextResponse.json(
-      { message: "Ingredientes actualizados correctamente" },
+      { message: "Ingredientes actualizados correctamente." },
       { status: 200 }
     );
   } catch (error) {
@@ -82,22 +72,20 @@ export async function PUT(request) {
   }
 }
 
-
-
 export async function DELETE(request) {
   try {
     const data = await request.json();
     const { id } = data;
 
     if (!id) {
-      return NextResponse.json({ message: 'ID del ingredient es requerido' }, { status: 400 });
+      return NextResponse.json({ message: "ID del ingrediente es requerido." }, { status: 400 });
     }
 
     await db.ingredient.delete({
       where: { id: parseInt(id) },
     });
 
-    return NextResponse.json({ message: 'Ingrediento eliminado' }, { status: 200 });
+    return NextResponse.json({ message: "Ingrediente eliminado." }, { status: 200 });
   } catch (error) {
     return NextResponse.json({ message: error.message }, { status: 500 });
   }
