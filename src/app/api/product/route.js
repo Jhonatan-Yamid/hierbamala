@@ -3,27 +3,30 @@ import db from '@/libs/db';
 
 export async function GET(request) {
   try {
+    // Obtener el término de búsqueda de los parámetros de la URL
+    const url = new URL(request.url);
+    const searchQuery = url.searchParams.get('search') || '';
+
+    // Buscar productos que contengan el término de búsqueda en su nombre
     const products = await db.product.findMany({
-      include: {
-        ingredients: {
-          include: {
-            ingredient: true // Incluir detalles del ingrediente
-          }
-        }
-      }
+      where: {
+        name: {
+          contains: searchQuery, // Búsqueda por nombre del producto
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        price: true,  // Solo devolver id, nombre y precio
+      },
     });
 
-    // Ajustar la respuesta para tener una estructura plana de ingredientes en cada producto
-    const formattedProducts = products.map(product => ({
-      ...product,
-      ingredients: product.ingredients.map(pi => pi.ingredient) // Extraer solo los ingredientes
-    }));
-
-    return NextResponse.json(formattedProducts, { status: 200 });
+    return NextResponse.json(products, { status: 200 });  // Devolver los productos encontrados
   } catch (error) {
     return NextResponse.json({ message: error.message }, { status: 500 });
   }
 }
+
 
 
 export async function POST(request) {

@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+   log      = ["query"]  // Esto habilita los logs de las consultas SQL
 }
 
 datasource db {
@@ -56,25 +57,29 @@ model ProductIngredient {
 }
 
 model Sale {
-  id          Int           @id @default(autoincrement())
-  totalAmount Float
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  status      String
-  table       Int
-  products    SaleProduct[]
+  id               Int              @id @default(autoincrement())
+  totalAmount      Float
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  status           String
+  table            String
+  generalObservation String?        // Observación general de la venta
+  products         SaleProduct[]    // Relación con los productos vendidos
 }
 
 model SaleProduct {
-  saleId    Int
-  productId Int
-  quantity  Int
-  product   Product @relation(fields: [productId], references: [id])
-  sale      Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  id          String    @id @default(cuid()) // Usamos cuid() para un id único por cada producto-venta
+  saleId      Int
+  productId   Int
+  quantity    Int
+  observation String?
+  
+  sale        Sale      @relation(fields: [saleId], references: [id])
+  product     Product   @relation(fields: [productId], references: [id])
 
-  @@id([saleId, productId])
-  @@index([productId], map: "SaleProduct_productId_fkey")
+  @@unique([saleId, productId, observation]) // Aseguramos que cada combinación de venta-producto-observación sea única
 }
+
 
 model Provider {
   id            Int      @id @default(autoincrement())
