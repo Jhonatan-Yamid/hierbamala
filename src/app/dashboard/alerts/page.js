@@ -199,16 +199,15 @@ export default function Alerts() {
           </div>
         ))}
       </div>
-
+        <hr className='my-5'/>
       {/* Mostrar opción para pedir permisos si no está suscrito */}
       {!isSubscribed && (
-        <div className="mt-4">
-          <p>No estás suscrito a las notificaciones. ¿Quieres habilitarlas?</p>
+        <div>
           <button
             onClick={handleRequestPermission}
-            className="mt-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+            className="mt-2 bg-emerald-700 text-white px-4 py-2 rounded hover:bg-blue-600"
           >
-            Pedir Permiso de Notificación
+            Activar Notificaciones
           </button>
         </div>
       )}
