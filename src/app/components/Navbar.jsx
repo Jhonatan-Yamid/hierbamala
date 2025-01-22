@@ -54,7 +54,7 @@ async function Navbar() {
             {session?.user?.image === 1 ? (
               <>
                 <li>
-                  <Link href="/dashboard/sales">Ventas</Link>
+                  <Link href="/dashboard/saleTable">Ventas</Link>
                 </li>
                 <li>
                   <Link href="/dashboard/IngredientInventory">Inventario</Link>

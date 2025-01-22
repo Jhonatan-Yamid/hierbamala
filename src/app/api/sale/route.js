@@ -1,6 +1,40 @@
 import { NextResponse } from 'next/server';
-import db from '@/libs/db'; // Asegúrate de importar tu cliente Prisma
+import db from '@/libs/db'; // Asegúrate de que db esté configurado correctamente
 import { nanoid } from 'nanoid'; // Usamos nanoid para generar un ID único
+
+// Función para obtener las ventas del día
+export async function GET() {
+  try {
+    // Obtener la fecha de hoy sin la parte de la hora
+    const today = new Date();
+    const startOfDay = new Date(today.setHours(0, 0, 0, 0)); // Establece a medianoche
+    const endOfDay = new Date(today.setHours(23, 59, 59, 999)); // Establece al final del día
+
+    // Consultar las ventas realizadas hoy
+    const sales = await db.sale.findMany({
+      where: {
+        updatedAt: {
+          gte: startOfDay, // Mayor o igual a la medianoche
+          lte: endOfDay,   // Menor o igual al final del día
+        },
+      },
+      include: {
+        products: {
+          include: {
+            product: true, // Incluir los productos asociados a la venta
+          },
+        },
+      },
+    });
+
+    // Retornar las ventas encontradas
+    return NextResponse.json(sales, { status: 200 });
+  } catch (error) {
+    console.error('Error al obtener las ventas:', error);
+    return NextResponse.json({ message: 'Error al obtener las ventas' }, { status: 500 });
+  }
+}
+
 
 export async function POST(request) {
   try {

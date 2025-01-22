@@ -89,3 +89,20 @@ model Provider {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
+
+model Alert {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  alertTime   DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+
+model Subscription {
+  id            Int      @id @default(autoincrement())
+  endpoint      String   @unique
+  expirationTime DateTime?
+  keys          Json
+}

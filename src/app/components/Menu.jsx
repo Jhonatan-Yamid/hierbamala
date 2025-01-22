@@ -76,7 +76,7 @@ const Menu = ({ session }) => {
                   <>
                     <li>
                       <Link
-                        href="/dashboard/sales"
+                        href="/dashboard/saleTable"
                         className="text-white"
                         onClick={closeMenu}
                       >
