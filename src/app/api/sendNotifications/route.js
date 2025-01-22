@@ -65,17 +65,24 @@ export async function GET() {
             },
             notificationPayload
           );
+          console.log('Notificación enviada correctamente a:', subscription.endpoint);
         } catch (error) {
-          console.error('Error al enviar notificación:', error);
-
-          // Eliminar suscripciones inválidas
+          console.error('Error al enviar notificación:', {
+            endpoint: subscription.endpoint,
+            error: error.message,
+            statusCode: error.statusCode,
+          });
+      
+          // Si la suscripción no es válida, elimínala
           if (error.statusCode === 410 || error.statusCode === 404) {
             await db.subscription.delete({
               where: { endpoint: subscription.endpoint },
             });
+            console.log('Suscripción eliminada por ser inválida:', subscription.endpoint);
           }
         }
       });
+      
     });
 
     return new Response(
