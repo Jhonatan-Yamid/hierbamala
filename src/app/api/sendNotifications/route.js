@@ -62,7 +62,8 @@ export async function GET() {
             notificationPayload
           );
         } catch (error) {
-          console.error('Error al enviar notificación:', error);
+          console.error('Error al enviar notificación desde el plugin:', error);
+          
 
           // Si la suscripción no es válida, elimínala
           if (error.statusCode === 410 || error.statusCode === 404) {
@@ -70,6 +71,13 @@ export async function GET() {
               where: { endpoint: subscription.endpoint },
             });
           }
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: error.message,
+            }),
+            { status: 500 }
+          );
         }
       });
     });
@@ -77,7 +85,7 @@ export async function GET() {
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Notificaciones enviadas. now: ${nowFormatted}, todayStart: ${todayStartFormatted}, todayEnd: ${todayEndFormatted} otro ${alertassumadas}`,
+        message: `Notificaciones enviadas. now: ${nowFormatted}, todayStart: ${todayStartFormatted}, todayEnd: ${todayEndFormatted} otro ${alertassumadas} id: ${process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY} ids ${process.env.VAPID_PRIVATE_KEY}`,
       }),
       { status: 200 }
     );
