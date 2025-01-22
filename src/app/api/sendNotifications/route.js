@@ -6,21 +6,15 @@ export async function GET() {
     const now = new Date();
     const timeZone = 'America/Bogota';
 
-    // Convertir a la hora de inicio y fin del día en la zona horaria deseada
+    // Calcular inicio y fin del día en la zona horaria deseada
     const todayStart = new Date(
       new Date(now.toLocaleString('en-US', { timeZone })).setHours(0, 0, 0, 0)
-    );
+    ).toISOString(); // Convertir a UTC
     const todayEnd = new Date(
       new Date(now.toLocaleString('en-US', { timeZone })).setHours(24, 0, 0, 0)
-    );
+    ).toISOString(); // Convertir a UTC
 
-    // Convertir fechas al formato colombiano
-    const nowFormatted = now.toLocaleString('es-CO', { timeZone });
-    const todayStartFormatted = todayStart.toLocaleString('es-CO', { timeZone });
-    const todayEndFormatted = todayEnd.toLocaleString('es-CO', { timeZone });
-    let alertassumadas = "";
-
-    // Obtener alertas que coincidan con el día actual y si son semanales, verificar que coincidan con el día de la semana
+    // Obtener alertas para el día actual
     const alerts = await db.alert.findMany({
       where: {
         OR: [
@@ -32,17 +26,20 @@ export async function GET() {
           },
           {
             repeatWeekly: true,
-            repeatDay: now.getDay(), // Verificar si es el día de la semana correcto
+            repeatDay: now.getDay(), // Verificar si es el día correcto de la semana
           },
         ],
       },
     });
 
+    console.log('Fechas calculadas:', { todayStart, todayEnd });
+    console.log('Alertas encontradas:', alerts);
+
     if (alerts.length === 0) {
       return new Response(
         JSON.stringify({
           success: false,
-          message: `No hay alertas para hoy. now: ${nowFormatted}, todayStart: ${todayStartFormatted}, todayEnd: ${todayEndFormatted}`,
+          message: `No hay alertas para hoy. Rango: ${todayStart} - ${todayEnd}`,
         }),
         { status: 200 }
       );
@@ -51,6 +48,7 @@ export async function GET() {
     // Obtener suscripciones activas
     const subscriptions = await db.subscription.findMany();
 
+    let alertassumadas = '';
     alerts.forEach(async (alert) => {
       alertassumadas += alert.title;
       const notificationPayload = JSON.stringify({
@@ -70,7 +68,7 @@ export async function GET() {
         } catch (error) {
           console.error('Error al enviar notificación:', error);
 
-          // Si la suscripción no es válida, elimínala
+          // Eliminar suscripciones inválidas
           if (error.statusCode === 410 || error.statusCode === 404) {
             await db.subscription.delete({
               where: { endpoint: subscription.endpoint },
@@ -83,7 +81,7 @@ export async function GET() {
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Notificaciones enviadas. now: ${nowFormatted}, todayStart: ${todayStartFormatted}, todayEnd: ${todayEndFormatted} otro ${alertassumadas}`,
+        message: `Notificaciones enviadas. Rango: ${todayStart} - ${todayEnd} otro ${alertassumadas}`,
       }),
       { status: 200 }
     );
