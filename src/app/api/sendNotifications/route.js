@@ -4,17 +4,9 @@ import db from '@/libs/db';
 export async function GET() {
   try {
     const now = new Date();
-    const timeZone = 'America/Bogota';
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
 
-    // Calcular inicio y fin del día en la zona horaria deseada
-    const todayStart = new Date(
-      new Date(now.toLocaleString('en-US', { timeZone })).setHours(0, 0, 0, 0)
-    ).toISOString(); // Convertir a UTC
-    const todayEnd = new Date(
-      new Date(now.toLocaleString('en-US', { timeZone })).setHours(24, 0, 0, 0)
-    ).toISOString(); // Convertir a UTC
-
-    // Obtener alertas para el día actual
     const alerts = await db.alert.findMany({
       where: {
         OR: [
@@ -26,37 +18,26 @@ export async function GET() {
           },
           {
             repeatWeekly: true,
-            repeatDay: now.getDay(), // Verificar si es el día correcto de la semana
+            repeatDay: now.getDay(),
           },
         ],
       },
     });
 
-    console.log('Fechas calculadas:', { todayStart, todayEnd });
-    console.log('Alertas encontradas:', alerts);
-
     if (alerts.length === 0) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          message: `No hay alertas para hoy. Rango: ${todayStart} - ${todayEnd}`,
-        }),
-        { status: 200 }
-      );
+      return new Response(JSON.stringify({ success: false, message: 'No hay alertas para hoy', alerts }), { status: 200 });
     }
 
-    // Obtener suscripciones activas
     const subscriptions = await db.subscription.findMany();
+    const results = [];
 
-    let alertassumadas = '';
-    alerts.forEach(async (alert) => {
-      alertassumadas += alert.title;
+    for (const alert of alerts) {
       const notificationPayload = JSON.stringify({
         title: alert.title,
         body: alert.description,
       });
 
-      subscriptions.forEach(async (subscription) => {
+      for (const subscription of subscriptions) {
         try {
           await webPush.sendNotification(
             {
@@ -65,35 +46,36 @@ export async function GET() {
             },
             notificationPayload
           );
-          console.log('Notificación enviada correctamente a:', subscription.endpoint);
+          results.push({ endpoint: subscription.endpoint, status: 'success' });
         } catch (error) {
-          console.error('Error al enviar notificación:', {
+          console.error('Error al enviar notificación:', error);
+          results.push({
             endpoint: subscription.endpoint,
-            error: error.message,
+            status: 'error',
+            message: error.message,
             statusCode: error.statusCode,
           });
-      
-          // Si la suscripción no es válida, elimínala
+
+          // Eliminar suscripción inválida
           if (error.statusCode === 410 || error.statusCode === 404) {
             await db.subscription.delete({
               where: { endpoint: subscription.endpoint },
             });
-            console.log('Suscripción eliminada por ser inválida:', subscription.endpoint);
           }
         }
-      });
-      
-    });
+      }
+    }
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Notificaciones enviadas. Rango: ${todayStart} - ${todayEnd} otro ${alertassumadas}`,
+        message: 'Notificaciones procesadas',
+        results,
       }),
       { status: 200 }
     );
   } catch (error) {
-    console.error('Error en el proceso de notificación:', error);
+    console.error('Error general:', error);
     return new Response(
       JSON.stringify({
         success: false,
