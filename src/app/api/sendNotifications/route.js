@@ -27,7 +27,7 @@ export async function GET() {
     });
 
     if (alerts.length === 0) {
-      return new Response(JSON.stringify({ success: false, message: 'No hay alertas para hoy' }), {
+      return new Response(JSON.stringify({ success: false, message: 'No hay alertas para hoy now:'+now+'todayStart'+todayStart+'todayEnd'+todayEnd }), {
         status: 200,
       });
     }
@@ -63,7 +63,7 @@ export async function GET() {
       });
     });
 
-    return new Response(JSON.stringify({ success: true, message: 'Notificaciones enviadas' }), {
+    return new Response(JSON.stringify({ success: true, message: 'Notificaciones enviadas now:'+now+'todayStart'+todayStart+'todayEnd'+todayEnd }), {
       status: 200,
     });
   } catch (error) {
