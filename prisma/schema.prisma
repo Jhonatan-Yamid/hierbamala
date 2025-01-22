@@ -95,6 +95,8 @@ model Alert {
   title       String
   description String
   alertTime   DateTime
+  repeatWeekly Boolean @default(false)  // Nuevo campo para indicar si es semanal
+  repeatDay   Int?     // Representa el día de la semana (0=Domingo, 1=Lunes, ..., 6=Sábado)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

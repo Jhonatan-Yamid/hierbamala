@@ -4,7 +4,7 @@ import db from '@/libs/db';
 // Crear una nueva alerta
 export async function POST(request) {
   try {
-    const { title, description, alertTime } = await request.json();
+    const { title, description, alertTime, repeatWeekly, repeatDay } = await request.json();
 
     if (!title || !description || !alertTime) {
       return NextResponse.json(
@@ -18,6 +18,8 @@ export async function POST(request) {
         title,
         description,
         alertTime: new Date(alertTime),
+        repeatWeekly: repeatWeekly || false,
+        repeatDay: repeatWeekly ?  parseInt(repeatDay) : null,
       },
     });
 
@@ -30,6 +32,7 @@ export async function POST(request) {
     );
   }
 }
+
 
 // Obtener todas las alertas
 export async function GET() {

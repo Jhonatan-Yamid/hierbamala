@@ -7,21 +7,31 @@ export async function GET() {
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-    // Obtener alertas que coincidan con el día actual
+
+    // Obtener alertas que coincidan con el día actual y si son semanales, verificar que coincidan con el día de la semana
     const alerts = await db.alert.findMany({
       where: {
-        alertTime: {
-          gte: todayStart,
-          lt: todayEnd,
-        },
+        OR: [
+          {
+            alertTime: {
+              gte: todayStart,
+              lt: todayEnd,
+            },
+          },
+          {
+            repeatWeekly: true,
+            repeatDay: now.getDay(),  // Verificar si es el día de la semana correcto
+          },
+        ],
       },
     });
+
     if (alerts.length === 0) {
       return new Response(JSON.stringify({ success: false, message: 'No hay alertas para hoy' }), {
         status: 200,
       });
     }
-    
+
     // Obtener suscripciones activas
     const subscriptions = await db.subscription.findMany();
 
