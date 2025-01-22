@@ -4,13 +4,20 @@ import db from '@/libs/db';
 export async function GET() {
   try {
     const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    const timeZone = 'America/Bogota';
+
+    // Convertir a la hora de inicio y fin del día en la zona horaria deseada
+    const todayStart = new Date(
+      new Date(now.toLocaleString('en-US', { timeZone })).setHours(0, 0, 0, 0)
+    );
+    const todayEnd = new Date(
+      new Date(now.toLocaleString('en-US', { timeZone })).setHours(24, 0, 0, 0)
+    );
 
     // Convertir fechas al formato colombiano
-    const nowFormatted = now.toLocaleString('es-CO', { timeZone: 'America/Bogota' });
-    const todayStartFormatted = todayStart.toLocaleString('es-CO', { timeZone: 'America/Bogota' });
-    const todayEndFormatted = todayEnd.toLocaleString('es-CO', { timeZone: 'America/Bogota' });
+    const nowFormatted = now.toLocaleString('es-CO', { timeZone });
+    const todayStartFormatted = todayStart.toLocaleString('es-CO', { timeZone });
+    const todayEndFormatted = todayEnd.toLocaleString('es-CO', { timeZone });
     let alertassumadas = "";
 
     // Obtener alertas que coincidan con el día actual y si son semanales, verificar que coincidan con el día de la semana
@@ -43,10 +50,9 @@ export async function GET() {
 
     // Obtener suscripciones activas
     const subscriptions = await db.subscription.findMany();
-    
 
     alerts.forEach(async (alert) => {
-      alertassumadas += alert.title
+      alertassumadas += alert.title;
       const notificationPayload = JSON.stringify({
         title: alert.title,
         body: alert.description,
@@ -62,8 +68,7 @@ export async function GET() {
             notificationPayload
           );
         } catch (error) {
-          console.error('Error al enviar notificación desde el plugin:', error);
-          
+          console.error('Error al enviar notificación:', error);
 
           // Si la suscripción no es válida, elimínala
           if (error.statusCode === 410 || error.statusCode === 404) {
@@ -71,13 +76,6 @@ export async function GET() {
               where: { endpoint: subscription.endpoint },
             });
           }
-          return new Response(
-            JSON.stringify({
-              success: false,
-              error: error.message,
-            }),
-            { status: 500 }
-          );
         }
       });
     });
@@ -85,7 +83,7 @@ export async function GET() {
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Notificaciones enviadas. now: ${nowFormatted}, todayStart: ${todayStartFormatted}, todayEnd: ${todayEndFormatted} otro ${alertassumadas} id: ${process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY} ids ${process.env.VAPID_PRIVATE_KEY}`,
+        message: `Notificaciones enviadas. now: ${nowFormatted}, todayStart: ${todayStartFormatted}, todayEnd: ${todayEndFormatted} otro ${alertassumadas}`,
       }),
       { status: 200 }
     );
