@@ -5,7 +5,7 @@ webPush.setVapidDetails(
     process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
     process.env.VAPID_PRIVATE_KEY
 );
-export async function GET() {
+export async function POST() {
     const pushSubscription = {
         endpoint: 'https://fcm.googleapis.com/fcm/send/cDVpb0-IhMQ:APA91bEi5Z8kLbPbFOgvmQf-otmLKbEND8DP4KM3XirMxEXI-XqEpk6Rbfk9ifoff_xdHWCEsWMMyIhFG9dsg7nzzET0cTciO1zLqLII4Xnp1YubmqSjdUz6jc-kGSfCpUtRKGrg74Yc',
         keys: {
@@ -18,13 +18,13 @@ export async function GET() {
         body: "funciona",
     });
     try {
-        webPush.sendNotification(pushSubscription, notificationPayload);
+        webPush.sendNotification(pushSubscription, notificationPayload).catch((err) => {
+            return new Response(
+               err
+            );
+        });
         return new Response(
-            JSON.stringify({
-                success: true,
-                message: 'Notificaciones procesadas',
-            }),
-            { status: 200 }
+            "jajaja"
         );
     } catch (error) {
         return new Response(
