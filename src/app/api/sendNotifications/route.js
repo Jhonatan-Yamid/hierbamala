@@ -24,7 +24,10 @@ export async function GET() {
     });
     await db.$connect();
 
+
+    await db.$disconnect();
     const subscriptions = await db.subscription.findMany();
+    await db.$connect();
 
     return new Response(
       JSON.stringify({
