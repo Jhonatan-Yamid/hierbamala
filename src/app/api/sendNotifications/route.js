@@ -45,8 +45,14 @@ export async function GET() {
               keys: subscription.keys,
             },
             notificationPayload
-          );
-          results.push({ endpoint: subscription.endpoint, status: 'success' });
+          ).catch((error) => {
+            console.log(error);
+            return new Response(
+              "error::"+error
+            );
+           
+          });;
+          results.push({ endpoint: subscription.endpoint, status: 'success'+alert.title });
         } catch (error) {
           console.error('Error al enviar notificación:', error);
           results.push({
