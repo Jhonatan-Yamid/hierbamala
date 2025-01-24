@@ -24,11 +24,11 @@ export async function POST() {
             );
         });
         return new Response(
-            "jajaja"
+            "super!"+JSON.stringify({ success: false, message: 'No hay alertas para hoy' })
         );
     } catch (error) {
         return new Response(
-            error
+            "error: "+error
         );
     }
 }
