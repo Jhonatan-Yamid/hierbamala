@@ -5,7 +5,7 @@ export async function GET() {
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-
+    await db.$disconnect();
     const alerts = await db.alert.findMany({
       where: {
         OR: [
@@ -22,6 +22,7 @@ export async function GET() {
         ],
       },
     });
+    await db.$connect();
 
     const subscriptions = await db.subscription.findMany();
 
@@ -31,7 +32,13 @@ export async function GET() {
         alerts,
         subscriptions,
       }),
-      { status: 200 }
+      { status: 200,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          Pragma: 'no-cache',
+          Expires: '0',
+        },
+       }
     );
   } catch (error) {
     console.error('Error obteniendo datos:', error);
