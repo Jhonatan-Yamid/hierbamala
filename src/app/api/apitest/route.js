@@ -2,8 +2,8 @@
 import webPush from 'web-push';
 webPush.setVapidDetails(
     'mailto:yamidjhonatan@gmail.com',
-    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
-    process.env.VAPID_PRIVATE_KEY
+    'BPDEYZBp_Qe_a5cWiFmxXlLgjQciJEyOBGXksenVCowDsGXvqJLlnwlIKDrQZKKOhAI5mt_pPLaRU8NSFhbsqH4',
+    'LoHeZN2dKkOj_DWpcgA5sZYQdcTdjjm5aFsT4d6WEqg'
 );
 export async function POST() {
     const pushSubscription = {
@@ -24,7 +24,7 @@ export async function POST() {
             );
         });
         return new Response(
-            "super!"+JSON.stringify({ success: false, message: 'No hay alertas para hoy' })
+            "super!"+JSON.stringify({ success: false, message: 'se fue' })
         );
     } catch (error) {
         return new Response(
