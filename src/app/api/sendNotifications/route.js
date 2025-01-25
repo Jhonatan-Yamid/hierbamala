@@ -1,5 +1,4 @@
 import { zonedTimeToUtc, utcToZonedTime } from 'date-fns-tz';
-import { format } from 'date-fns';
 import db from '@/libs/db';
 
 const TIMEZONE = 'America/Bogota'; // Zona horaria de Colombia
