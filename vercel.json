@@ -1,0 +1,11 @@
+{
+    "routes": [
+      {
+        "src": "/api/alerts",
+        "headers": {
+          "cache-control": "no-store, no-cache, must-revalidate, proxy-revalidate"
+        }
+      }
+    ]
+  }
+  
