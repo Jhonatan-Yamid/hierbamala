@@ -1,5 +1,6 @@
 import { DateTime } from 'luxon';
 import db from '@/libs/db';
+export const dynamic = 'force-dynamic';
 
 export async function GET(request) {
   try {
