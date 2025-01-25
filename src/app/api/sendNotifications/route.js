@@ -1,47 +1,32 @@
-import { zonedTimeToUtc, utcToZonedTime } from 'date-fns-tz';
+import { DateTime } from 'luxon';
 import db from '@/libs/db';
-
-const TIMEZONE = 'America/Bogota'; // Zona horaria de Colombia
 
 export async function GET() {
   try {
-    const now = new Date(); // Fecha actual del servidor
+    // Zona horaria de Colombia
+    const TIMEZONE = 'America/Bogota';
 
-    // Convierte la fecha actual al tiempo colombiano
-    const colombiaTime = utcToZonedTime(now, TIMEZONE);
+    // Fecha actual en la zona horaria de Colombia
+    const now = DateTime.now().setZone(TIMEZONE);
 
-    // Ajusta el inicio y final del día en hora colombiana
-    const todayStart = new Date(
-      colombiaTime.getFullYear(),
-      colombiaTime.getMonth(),
-      colombiaTime.getDate(),
-      0, 0, 0
-    );
-    const todayEnd = new Date(
-      colombiaTime.getFullYear(),
-      colombiaTime.getMonth(),
-      colombiaTime.getDate(),
-      23, 59, 59
-    );
+    // Inicio y fin del día en la zona horaria de Colombia
+    const todayStart = now.startOf('day').toISO(); // Inicio del día en ISO string
+    const todayEnd = now.endOf('day').toISO(); // Fin del día en ISO string
 
-    // Convierte los límites a UTC para almacenarlos correctamente en la base de datos
-    const todayStartUTC = zonedTimeToUtc(todayStart, TIMEZONE);
-    const todayEndUTC = zonedTimeToUtc(todayEnd, TIMEZONE);
-
-    // Obtén los datos de la base de datos
+    // Consulta la base de datos
     const [alerts, subscriptions] = await Promise.all([
       db.alert.findMany({
         where: {
           OR: [
             {
               alertTime: {
-                gte: todayStartUTC,
-                lt: todayEndUTC,
+                gte: todayStart, // Inicio del día en hora colombiana
+                lt: todayEnd, // Fin del día en hora colombiana
               },
             },
             {
               repeatWeekly: true,
-              repeatDay: colombiaTime.getDay(),
+              repeatDay: now.weekday, // Día de la semana (1 = lunes, 7 = domingo)
             },
           ],
         },
@@ -49,6 +34,7 @@ export async function GET() {
       db.subscription.findMany(),
     ]);
 
+    // Respuesta con los datos
     return new Response(
       JSON.stringify({
         success: true,
