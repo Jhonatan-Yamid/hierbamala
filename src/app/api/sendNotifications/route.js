@@ -1,33 +1,54 @@
+import { zonedTimeToUtc, utcToZonedTime } from 'date-fns-tz';
+import { format } from 'date-fns';
 import db from '@/libs/db';
+
+const TIMEZONE = 'America/Bogota'; // Zona horaria de Colombia
 
 export async function GET() {
   try {
-    const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-    await db.$disconnect();
-    const alerts = await db.alert.findMany({
-      where: {
-        OR: [
-          {
-            alertTime: {
-              gte: todayStart,
-              lt: todayEnd,
+    const now = new Date(); // Fecha actual del servidor
+
+    // Convierte la fecha actual al tiempo colombiano
+    const colombiaTime = utcToZonedTime(now, TIMEZONE);
+
+    // Ajusta el inicio y final del día en hora colombiana
+    const todayStart = new Date(
+      colombiaTime.getFullYear(),
+      colombiaTime.getMonth(),
+      colombiaTime.getDate(),
+      0, 0, 0
+    );
+    const todayEnd = new Date(
+      colombiaTime.getFullYear(),
+      colombiaTime.getMonth(),
+      colombiaTime.getDate(),
+      23, 59, 59
+    );
+
+    // Convierte los límites a UTC para almacenarlos correctamente en la base de datos
+    const todayStartUTC = zonedTimeToUtc(todayStart, TIMEZONE);
+    const todayEndUTC = zonedTimeToUtc(todayEnd, TIMEZONE);
+
+    // Obtén los datos de la base de datos
+    const [alerts, subscriptions] = await Promise.all([
+      db.alert.findMany({
+        where: {
+          OR: [
+            {
+              alertTime: {
+                gte: todayStartUTC,
+                lt: todayEndUTC,
+              },
             },
-          },
-          {
-            repeatWeekly: true,
-            repeatDay: now.getDay(),
-          },
-        ],
-      },
-    });
-    await db.$connect();
-
-
-    await db.$disconnect();
-    const subscriptions = await db.subscription.findMany();
-    await db.$connect();
+            {
+              repeatWeekly: true,
+              repeatDay: colombiaTime.getDay(),
+            },
+          ],
+        },
+      }),
+      db.subscription.findMany(),
+    ]);
 
     return new Response(
       JSON.stringify({
@@ -35,13 +56,14 @@ export async function GET() {
         alerts,
         subscriptions,
       }),
-      { status: 200,
+      {
+        status: 200,
         headers: {
           'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
           Pragma: 'no-cache',
           Expires: '0',
         },
-       }
+      }
     );
   } catch (error) {
     console.error('Error obteniendo datos:', error);
