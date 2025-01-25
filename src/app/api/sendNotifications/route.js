@@ -1,7 +1,7 @@
 import { DateTime } from 'luxon';
 import db from '@/libs/db';
 
-export async function GET() {
+export async function GET(request) {
   try {
     // Zona horaria de Colombia
     const TIMEZONE = 'America/Bogota';
