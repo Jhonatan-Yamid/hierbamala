@@ -73,6 +73,28 @@ export default function Alerts() {
     }
   };
 
+  const sendNofitication = async (e) => {
+    try{
+      const url = '/api/send-notifications';
+      const method = 'GET';
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (response.ok) {
+        console.log('Notificaciones enviadas con exito');
+      } else {
+        console.error('Error al guardar la alerta');
+      }
+    }catch(error) {
+      console.error('Error al anviar la notificación:', error);
+    }
+  }
+
   const handleDelete = async (id) => {
     try {
       const response = await fetch('/api/alerts', {
@@ -228,12 +250,18 @@ export default function Alerts() {
         <hr className='my-5'/>
       {/* Mostrar opción para pedir permisos si no está suscrito */}
       {!isSubscribed && (
-        <div>
+        <div className='flex justify-between'>
           <button
             onClick={handleRequestPermission}
             className="mt-2 bg-emerald-700 text-white px-4 py-2 rounded hover:bg-blue-600"
           >
             Activar Notificaciones
+          </button>
+          <button
+            onClick={sendNofitication}
+            className="mt-2 bg-emerald-700 text-white px-4 py-2 rounded hover:bg-blue-600"
+          >
+            Enviar Notificaciones Ahora
           </button>
         </div>
       )}
