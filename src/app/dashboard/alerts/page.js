@@ -74,7 +74,7 @@ export default function Alerts() {
   };
 
   const sendNofitication = async (e) => {
-    try{
+    try {
       const url = '/api/send-notifications';
       const method = 'GET';
 
@@ -90,7 +90,7 @@ export default function Alerts() {
       } else {
         console.error('Error al guardar la alerta');
       }
-    }catch(error) {
+    } catch (error) {
       console.error('Error al anviar la notificación:', error);
     }
   }
@@ -157,73 +157,73 @@ export default function Alerts() {
 
       {/* Formulario */}
       {isFormVisible && (
-  <form
-    onSubmit={handleSubmit}
-    className="p-4 rounded-lg border border-white bg-gray-950 mb-6"
-  >
-    <h2 className="text-xl font-semibold text-slate-200 mb-4">
-      {isEditing ? 'Editar Alerta' : 'Agregar Alerta'}
-    </h2>
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <input
-        type="text"
-        name="title"
-        value={formData.title}
-        onChange={handleChange}
-        placeholder="Título de la Alerta"
-        required
-        className="p-2 rounded border border-gray-700 bg-gray-800 text-white"
-      />
-      <input
-        type="text"
-        name="description"
-        value={formData.description}
-        onChange={handleChange}
-        placeholder="Descripción"
-        className="p-2 rounded border border-gray-700 bg-gray-800 text-white"
-      />
-      <input
-        type="datetime-local"
-        name="alertTime"
-        value={formData.alertTime}
-        onChange={handleChange}
-        required
-        className="p-2 rounded border border-gray-700 bg-gray-800 text-white"
-      />
-      <div className="flex items-center space-x-2">
-        <input
-          type="checkbox"
-          name="repeatWeekly"
-          checked={formData.repeatWeekly}
-          onChange={(e) => setFormData({ ...formData, repeatWeekly: e.target.checked })}
-          className="bg-gray-800 text-white"
-        />
-        <label className="text-white">Repetir semanalmente</label>
-      </div>
-      {formData.repeatWeekly && (
-        <select
-          name="repeatDay"
-          value={formData.repeatDay}
-          onChange={handleChange}
-          className="p-2 rounded border border-gray-700 bg-gray-800 text-white"
+        <form
+          onSubmit={handleSubmit}
+          className="p-4 rounded-lg border border-white bg-gray-950 mb-6"
         >
-          <option value="">Selecciona el día</option>
-          {['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'].map((day, index) => (
-            <option key={index} value={index}>
-              {day}
-            </option>
-          ))}
-        </select>
+          <h2 className="text-xl font-semibold text-slate-200 mb-4">
+            {isEditing ? 'Editar Alerta' : 'Agregar Alerta'}
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <input
+              type="text"
+              name="title"
+              value={formData.title}
+              onChange={handleChange}
+              placeholder="Título de la Alerta"
+              required
+              className="p-2 rounded border border-gray-700 bg-gray-800 text-white"
+            />
+            <input
+              type="text"
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              placeholder="Descripción"
+              className="p-2 rounded border border-gray-700 bg-gray-800 text-white"
+            />
+            <input
+              type="datetime-local"
+              name="alertTime"
+              value={formData.alertTime}
+              onChange={handleChange}
+              required
+              className="p-2 rounded border border-gray-700 bg-gray-800 text-white"
+            />
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                name="repeatWeekly"
+                checked={formData.repeatWeekly}
+                onChange={(e) => setFormData({ ...formData, repeatWeekly: e.target.checked })}
+                className="bg-gray-800 text-white"
+              />
+              <label className="text-white">Repetir semanalmente</label>
+            </div>
+            {formData.repeatWeekly && (
+              <select
+                name="repeatDay"
+                value={formData.repeatDay}
+                onChange={handleChange}
+                className="p-2 rounded border border-gray-700 bg-gray-800 text-white"
+              >
+                <option value="">Selecciona el día</option>
+                {['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'].map((day, index) => (
+                  <option key={index} value={index}>
+                    {day}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+          <button
+            type="submit"
+            className="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          >
+            {isEditing ? 'Actualizar Alerta' : 'Agregar Alerta'}
+          </button>
+        </form>
       )}
-    </div>
-    <button
-      type="submit"
-      className="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-    >
-      {isEditing ? 'Actualizar Alerta' : 'Agregar Alerta'}
-    </button>
-  </form>
-)}
 
 
       {/* Lista de alertas */}
@@ -247,24 +247,30 @@ export default function Alerts() {
           </div>
         ))}
       </div>
-        <hr className='my-5'/>
+      <hr className='my-5' />
       {/* Mostrar opción para pedir permisos si no está suscrito */}
-      {!isSubscribed && (
-        <div className='flex justify-between'>
-          <button
-            onClick={handleRequestPermission}
-            className="mt-2 bg-emerald-700 text-white px-4 py-2 rounded hover:bg-blue-600"
-          >
-            Activar Notificaciones
-          </button>
-          <button
-            onClick={sendNofitication}
-            className="mt-2 bg-emerald-700 text-white px-4 py-2 rounded hover:bg-blue-600"
-          >
-            Enviar Notificaciones Ahora
-          </button>
+      <div className='flex justify-between'>
+        <div>
+          {!isSubscribed && (
+            <div>
+              <button
+                onClick={handleRequestPermission}
+                className="mt-2 bg-emerald-700 text-white px-4 py-2 rounded hover:bg-blue-600"
+              >
+                Activar Notificaciones
+              </button>
+
+            </div>
+          )}
         </div>
-      )}
+        <button
+          onClick={sendNofitication}
+          className="mt-2 bg-emerald-700 text-white px-4 py-2 rounded hover:bg-blue-600"
+        >
+          Enviar Notificaciones Ahora
+        </button>
+      </div>
+
     </div>
   );
 }
