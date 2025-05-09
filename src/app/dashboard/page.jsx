@@ -151,7 +151,7 @@ const DashboardPage = () => {
         </div>
       )}
         <h1 className="text-3xl font-bold mt-6 mb-8">
-          ¿Qué quieres hacer hoy {session?.user?.name}?
+          ¿Qué quieres hoy {session?.user?.name}?
         </h1>
         <div className="grid grid-cols-2 gap-6 px-6 md:grid-cols-3 lg:grid-cols-3 pb-6">
           {menuOptions.map((option, index) => (
