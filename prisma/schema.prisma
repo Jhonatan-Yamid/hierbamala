@@ -35,7 +35,7 @@ model Ingredient {
 model Product {
   id          Int                 @id @default(autoincrement())
   name        String
-  description String?
+  description String?             @db.Text 
   price       Float
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
@@ -121,7 +121,7 @@ model SaleProductAddition {
   @@index([saleProductId])
 }
 
-model utils {
+model Utils {
   id        Int      @id @default(autoincrement())
   ipv4      String 
   created_at DateTime @updatedAt
