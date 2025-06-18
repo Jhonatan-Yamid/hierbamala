@@ -3,7 +3,7 @@ import db from '@/libs/db';
  
 // Crear una nueva alerta
 export async function POST(request) {
-  console.log('--- Verificando variables de entorno ---');
+  console.log('--- Verificando variables de entornos ---');
   console.log('DATABASE_URL:', process.env.DATABASE_URL ? '¡Variable de base de datos cargada!' : '¡DATABASE_URL NO CARGADA!');
   console.log('NEXTAUTH_SECRET:', process.env.NEXTAUTH_SECRET ? '¡Secreto de NextAuth cargado!' : '¡NEXTAUTH_SECRET NO CARGADA!');
   // Puedes añadir más variables que quieras verificar
