@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import db from '@/libs/db';
-
+ 
 // Crear una nueva alerta
 export async function POST(request) {
   try {
