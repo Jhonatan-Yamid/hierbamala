@@ -34,6 +34,8 @@ const SalesForm = ({ saleId }) => {
     availableGames,
     calculateTotal,
     formatTicket,
+    setIpPrint,
+    ipPrint
   } = useSalesFormLogic(saleId);
   if (isLoading) {
     return (
@@ -106,11 +108,10 @@ const SalesForm = ({ saleId }) => {
       tableNumber: tableNumber || 0,
       availableGames: game ? [availableGames.find((g) => g.id.toString() === game)?.name || "Sin juego"] : [],
     };
-
+    // ipUrl = ipPrint.ip;
+    const printUrl = `http://${ipPrint.ip}:3011/print`;
     try {
-      alert(getPrintIP())
-      return
-      const res = await fetch(getPrintIP, {
+      const res = await fetch(printUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestBody),
@@ -118,8 +119,8 @@ const SalesForm = ({ saleId }) => {
       const data = await res.json();
       alert(data.success ? "Ticket enviado a la impresora" : "Error al imprimir");
     } catch (err) {
-      console.error("Error al imprimir:", err);
-      alert("Error al conectar con el servicio de impresión.");
+      console.log("Error al imprimir:", err);
+      alert(err+"Error al conectar con el servicio de impresión.");
     }
   };
 

@@ -52,6 +52,7 @@ const useSalesFormLogic = (saleId) => {
   const [error, setError] = useState("");
   const [showPreview, setShowPreview] = useState(false);
   const [availableProducts, setAvailableProducts] = useState([]);
+  const [ipPrint, setIpPrint] = useState([])
 
   const isEditing = !!saleId;
   useEffect(() => {
@@ -114,6 +115,21 @@ const useSalesFormLogic = (saleId) => {
       }
     };
     fetchProducts();
+  }, []);
+
+  useEffect(() => {
+    const getPrintIP = async () => {
+      try {
+        const res = await fetch('/api/print-ip');
+        if (!res.ok) throw new Error('Error cargando Ip');
+        const data = await res.json();
+        setIpPrint(data);
+      } catch (error) {
+        console.error("Error Cargando la IP", err);
+        setError('Error Cargando la IP');
+      }
+    };
+    getPrintIP();
   }, []);
 
   const calculateTotal = () =>
@@ -187,6 +203,8 @@ const useSalesFormLogic = (saleId) => {
     availableGames,
     calculateTotal,
     formatTicket,
+    ipPrint,
+    setIpPrint
   };
 };
 
