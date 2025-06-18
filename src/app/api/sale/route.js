@@ -38,7 +38,6 @@ export async function GET() {
 
 export async function POST(request) {
   try {
-    // Obtener los datos del formulario enviado
     const data = await request.json();
 
     const {
@@ -49,12 +48,11 @@ export async function POST(request) {
       products,
     } = data;
 
-    // Validar que los productos sean proporcionados
     if (!products || products.length === 0) {
       return NextResponse.json({ message: 'Debe seleccionar al menos un producto' }, { status: 400 });
     }
 
-    // Crear una nueva venta
+    // Crear la venta
     const newSale = await db.sale.create({
       data: {
         totalAmount,
@@ -64,33 +62,44 @@ export async function POST(request) {
       },
     });
 
-    // Crear o insertar productos con observaciones
+    // Procesar productos
     const productPromises = products.map(async (product) => {
-      // Generar un ID único para cada combinación de saleId, productId, y observation
-      const uniqueSaleProductId = nanoid();
-
-      // Crear un nuevo registro para el producto y la observación
-      return db.saleProduct.create({
+      const saleProduct = await db.saleProduct.create({
         data: {
-          id: uniqueSaleProductId, // Usamos el ID único generado
-          saleId: newSale.id, // ID de la venta
-          productId: product.id, // ID del producto
-          quantity: product.quantity, // Cantidad del producto
-          observation: product.observation || '', // Observación
+          id: nanoid(),
+          saleId: newSale.id,
+          productId: product.id,
+          quantity: product.quantity,
+          observation: product.observation || '',
         },
       });
+
+      // Procesar adiciones
+      const additionPromises = product.additions.map((addition) => {
+        return db.saleProductAddition.create({
+          data: {
+            saleProductId: saleProduct.id,
+            name: addition.name,
+            price: addition.price,
+          },
+        });
+      });
+
+      await Promise.all(additionPromises);
+
+      return saleProduct;
     });
 
-    // Esperamos todas las promesas de productos
     const updatedProducts = await Promise.all(productPromises);
 
-    // Asignamos los productos actualizados a la venta
-    newSale.products = updatedProducts;
+    return NextResponse.json({
+      ...newSale,
+      products: updatedProducts,
+    }, { status: 201 });
 
-    // Respondemos con la venta creada y los productos actualizados
-    return NextResponse.json(newSale, { status: 201 });
   } catch (error) {
     console.error('Error al crear la venta:', error);
     return NextResponse.json({ message: 'Error al crear la venta' }, { status: 500 });
   }
 }
+

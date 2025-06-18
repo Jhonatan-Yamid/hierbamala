@@ -40,8 +40,8 @@ model Product {
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
   category    String              @default("Desconocida")
-  ingredients ProductIngredient[]
-  sales       SaleProduct[]
+  ingredients ProductIngredient[] // Relación con los ingredientes
+  sales       SaleProduct[]       // Relación con las ventas
 }
 
 model ProductIngredient {
@@ -73,7 +73,8 @@ model SaleProduct {
   productId   Int
   quantity    Int
   observation String?
-  
+  additions   SaleProductAddition[]  // Relación con las adiciones
+
   sale        Sale      @relation(fields: [saleId], references: [id])
   product     Product   @relation(fields: [productId], references: [id])
 
@@ -107,4 +108,21 @@ model Subscription {
   endpoint      String   @unique
   expirationTime DateTime?
   keys          Json
+}
+
+model SaleProductAddition {
+  id             Int       @id @default(autoincrement())
+  saleProductId  String
+  name           String
+  price          Float
+
+  saleProduct    SaleProduct @relation(fields: [saleProductId], references: [id])
+
+  @@index([saleProductId])
+}
+
+model utils {
+  id        Int      @id @default(autoincrement())
+  ipv4      String 
+  created_at DateTime @updatedAt
 }

@@ -193,15 +193,11 @@ function DailySales() {
                   >
                     &times;
                   </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleEditSale(sale);
-                    }}
+                  <Link href={`/dashboard/sales/${sale.id}`}><button
                     className="ml-4 text-gray-600 hover:text-gray-200 text-3xl"
                   >
                     <FaEdit />
-                  </button>
+                  </button></Link>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
