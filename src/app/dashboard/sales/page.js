@@ -109,7 +109,7 @@ const SalesForm = ({ saleId }) => {
       availableGames: game ? [availableGames.find((g) => g.id.toString() === game)?.name || "Sin juego"] : [],
     };
     // ipUrl = ipPrint.ip;
-    const printUrl = `http://${ipPrint.ip}:3011/print`;
+    const printUrl = `${ipPrint.ip}/print`;
     try {
       const res = await fetch(printUrl, {
         method: "POST",
@@ -131,7 +131,7 @@ const SalesForm = ({ saleId }) => {
   };
 
   return (
-    <form className="bg-gray-950 text-slate-200 p-6 rounded-md space-y-4">
+    <form  onSubmit={e => e.preventDefault()} className="bg-gray-950 text-slate-200 p-6 rounded-md space-y-4">
       <h2 className="text-xl font-bold">
         {isEditing ? 'Editar Venta' : 'Nueva Venta'}
       </h2>
