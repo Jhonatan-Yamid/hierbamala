@@ -82,6 +82,7 @@ const SalesForm = ({ saleId }) => {
       if (res.ok) {
         const newSale = await res.json();
         console.log("Venta creada:", newSale);
+        // handlePrint()
         setShowPreview(true);
       } else {
         const err = await res.json();
@@ -169,7 +170,7 @@ const SalesForm = ({ saleId }) => {
         onClick={handlePay}
         className="w-full p-2 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-md"
       >
-        Pagar
+        Guardar
       </button>
 
       {showPreview && (
