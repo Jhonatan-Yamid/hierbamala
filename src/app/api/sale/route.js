@@ -24,6 +24,8 @@ export async function GET() {
             product: true, // Incluir los productos asociados a la venta
           },
         },
+        // *** MODIFICACIÓN PARA JUEGOS: Incluir el juego relacionado al obtener las ventas ***
+        game: true,
       },
     });
 
@@ -46,10 +48,18 @@ export async function POST(request) {
       generalObservation,
       totalAmount,
       products,
+      // *** MODIFICACIÓN PARA JUEGOS: Desestructurar 'game' del body ***
+      game,
     } = data;
 
     if (!products || products.length === 0) {
       return NextResponse.json({ message: 'Debe seleccionar al menos un producto' }, { status: 400 });
+    }
+
+    // *** MODIFICACIÓN PARA JUEGOS: Convertir 'game' a gameId (número o null) ***
+    const gameId = game ? parseInt(game, 10) : null;
+    if (game && isNaN(gameId)) {
+        return NextResponse.json({ message: 'ID de juego inválido' }, { status: 400 });
     }
 
     // Crear la venta
@@ -59,6 +69,8 @@ export async function POST(request) {
         status: saleStatus || 'en proceso',
         table: tableNumber,
         generalObservation,
+        // *** MODIFICACIÓN PARA JUEGOS: Añadir gameId a la data de la venta ***
+        gameId,
       },
     });
 
@@ -92,13 +104,33 @@ export async function POST(request) {
 
     const updatedProducts = await Promise.all(productPromises);
 
+    // *** MODIFICACIÓN PARA JUEGOS: Incluir el juego en la respuesta si es necesario ***
+    // Para que el frontend tenga el objeto de juego completo si lo necesita inmediatamente
+    const finalSale = await db.sale.findUnique({
+      where: { id: newSale.id },
+      include: {
+        game: true, // Incluir la información del juego
+        products: {
+          include: {
+            product: true,
+            additions: true,
+          }
+        }
+      }
+    });
+
+
     return NextResponse.json({
-      ...newSale,
+      ...finalSale, // Usamos finalSale para asegurar que el objeto game esté incluido
       products: updatedProducts,
     }, { status: 201 });
 
   } catch (error) {
     console.error('Error al crear la venta:', error);
+    // *** MODIFICACIÓN PARA JUEGOS: Manejo de error si el gameId no existe ***
+    if (error.code === 'P2003' && error.meta?.field_name === 'gameId') {
+        return NextResponse.json({ message: 'El ID de juego proporcionado no existe.' }, { status: 400 });
+    }
     return NextResponse.json({ message: 'Error al crear la venta' }, { status: 500 });
   }
 }

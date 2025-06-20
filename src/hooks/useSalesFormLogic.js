@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react"; // Asegúrate de importar useCallback
+
+// Eliminamos el array hardcodeado de availableGames de aquí
 
 const availableAdditions = [
   { id: "Queso Pequeño", name: "Queso Pequeño", price: 1500 },
@@ -23,25 +25,10 @@ const availableAdditions = [
   { id: "Medio Chicharrón", name: "Medio Chicharrón", price: 8000 },
 ];
 
-const availableGames = [
-  { id: 1, name: "Cartas" },
-  { id: 2, name: "Dominó" },
-  { id: 3, name: "Ajedrez" },
-  { id: 4, name: "Parques" },
-  { id: 5, name: "UNO" },
-  { id: 6, name: "Jenga" },
-  { id: 7, name: "Escalera" },
-  { id: 8, name: "Futbolito" },
-  { id: 9, name: "Bolos" },
-  { id: 10, name: "Escalera" },
-  { id: 11, name: "Poker" },
-  { id: 12, name: "Naipes" },
-  { id: 13, name: "Catapis" },
-];
 
 // hooks/useSalesFormLogic.js
 const useSalesFormLogic = (saleId) => {
-  const [isLoading, setIsLoading] = useState(!!saleId); // Estado nuevo
+  const [isLoading, setIsLoading] = useState(true); // Inicializamos en true
   const [products, setProducts] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [suggestions, setSuggestions] = useState([]);
@@ -52,27 +39,47 @@ const useSalesFormLogic = (saleId) => {
   const [error, setError] = useState("");
   const [showPreview, setShowPreview] = useState(false);
   const [availableProducts, setAvailableProducts] = useState([]);
-  const [ipPrint, setIpPrint] = useState({ ip: '' }); 
+  const [availableGames, setAvailableGames] = useState([]); // *** NUEVO: Estado para los juegos de la DB ***
+  const [ipPrint, setIpPrint] = useState({ ip: '' });
 
   const isEditing = !!saleId;
-  useEffect(() => {
-    const loadSaleData = async () => {
-      try {
-        setIsLoading(true);
-        const numericId = Number(saleId); // Convertir a número
-        const res = await fetch(`/api/sale/${numericId}`);
 
-        if (!res.ok) throw new Error('Error cargando venta');
+  // Creamos una función useCallback para la carga inicial de datos
+  const fetchInitialData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      // 1. Cargar productos
+      const productsRes = await fetch("/api/product");
+      if (!productsRes.ok) throw new Error('Error cargando productos');
+      const productsData = await productsRes.json();
+      if (!Array.isArray(productsData)) throw new Error('Formato de productos inválido');
+      setAvailableProducts(productsData);
 
-        const saleData = await res.json();
+      // 2. Cargar IP de impresora
+      const ipRes = await fetch('/api/print-ip');
+      if (!ipRes.ok) throw new Error('Error cargando IP');
+      const ipData = await ipRes.json();
+      setIpPrint({ ip: ipData.ip || '' });
 
-        // Validación importante
-        if (!saleData?.products) throw new Error('Estructura de datos inválida');
+      // 3. *** NUEVO: Cargar Juegos de Mesa desde la API ***
+      const gamesRes = await fetch('/api/game'); // Llama a tu endpoint de API de juegos
+      if (!gamesRes.ok) throw new Error('Error cargando juegos');
+      const gamesData = await gamesRes.json();
+      if (!Array.isArray(gamesData)) throw new Error('Formato de juegos inválido');
+      setAvailableGames(gamesData); // Guarda los juegos en el estado
+
+      // 4. Si es edición, cargar datos de la venta específica
+      if (saleId) {
+        const numericId = Number(saleId);
+        const saleRes = await fetch(`/api/sale/${numericId}`);
+        if (!saleRes.ok) throw new Error('Error cargando venta');
+        const saleData = await saleRes.json();
+
+        if (!saleData?.products) throw new Error('Estructura de datos de venta inválida');
 
         const mappedProducts = saleData.products.map(p => ({
           ...p,
           additions: p.additions?.map(a => ({
-            // Asegurar consistencia con availableAdditions
             id: a.id || a.name,
             name: a.name,
             price: a.price
@@ -82,55 +89,25 @@ const useSalesFormLogic = (saleId) => {
         }));
 
         setProducts(mappedProducts);
-        setTableNumber(saleData.tableNumber?.toString() || "");
-        setSaleStatus(saleData.saleStatus || "en proceso");
+        setTableNumber(saleData.table?.toString() || ""); // Usar 'table' del modelo Sale
+        setSaleStatus(saleData.status || "en proceso"); // Usar 'status' del modelo Sale
         setGeneralObservation(saleData.generalObservation || "");
-
-      } catch (error) {
-        console.error('Error loading sale:', error);
-        setError(error.message || 'Error cargando datos de la venta');
-      } finally {
-        setIsLoading(false);
+        setGame(saleData.gameId?.toString() || ""); // *** NUEVO: Cargar el juego seleccionado ***
       }
-    };
 
-    if (saleId) loadSaleData();
-  }, [saleId]);
+    } catch (error) {
+      console.error('Error loading initial data:', error);
+      setError(error.message || 'Error cargando datos iniciales');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [saleId]); // `saleId` es una dependencia porque la lógica de carga de venta depende de ella
 
-
+  // Ejecutar la carga inicial de datos al montar el componente o cambiar saleId
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const res = await fetch("/api/product");
-        if (!res.ok) throw new Error('Error cargando productos');
+    fetchInitialData();
+  }, [fetchInitialData]);
 
-        const data = await res.json();
-        // Validación básica
-        if (!Array.isArray(data)) throw new Error('Formato de productos inválido');
-
-        setAvailableProducts(data);
-      } catch (err) {
-        console.error("Error fetching products:", err);
-        setError('Error cargando catálogo de productos');
-      }
-    };
-    fetchProducts();
-  }, []);
-
-  useEffect(() => {
-    const getPrintIP = async () => {
-      try {
-        const res = await fetch('/api/print-ip');
-        if (!res.ok) throw new Error('Error cargando Ip');
-        const data = await res.json();
-        setIpPrint({ ip: data.ip || '' }); 
-      } catch (error) {
-        console.error("Error Cargando la IP", err);
-        setError('Error Cargando la IP');
-      }
-    };
-    getPrintIP();
-  }, []);
 
   const calculateTotal = () =>
     products.reduce(
@@ -148,6 +125,7 @@ const useSalesFormLogic = (saleId) => {
       "es-CO"
     )} ***\n`;
     ticket += `Mesa: ${tableNumber}\n`;
+    // Asegúrate de buscar el nombre del juego usando el estado `game` y la lista `availableGames`
     ticket += `Juego: ${availableGames.find((g) => g.id.toString() === game)?.name || "N/A"
       }\n`;
     ticket += `------------------------------------------\nCant\t Productos\n`;
@@ -177,7 +155,7 @@ const useSalesFormLogic = (saleId) => {
     return ticket;
   };
   return {
-    isLoading, // Añade esto al objeto de retorno
+    isLoading,
     isEditing,
     products,
     setProducts,
@@ -198,13 +176,13 @@ const useSalesFormLogic = (saleId) => {
     showPreview,
     setShowPreview,
     availableProducts,
-    setAvailableProducts,
+    // setAvailableProducts, // No es necesario retornar el setter si solo se usa internamente
     availableAdditions,
-    availableGames,
+    availableGames, // *** RETORNAMOS EL ESTADO availableGames CARGADO DE LA DB ***
     calculateTotal,
     formatTicket,
     ipPrint,
-    setIpPrint
+    // setIpPrint // No es necesario retornar el setter si solo se usa internamente
   };
 };
 

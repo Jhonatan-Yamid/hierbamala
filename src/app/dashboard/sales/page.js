@@ -21,8 +21,8 @@ const SalesForm = ({ saleId }) => {
     setTableNumber,
     saleStatus,
     setSaleStatus,
-    game,
-    setGame,
+    game, // Ya tienes 'game' aquí
+    setGame, // Ya tienes 'setGame' aquí
     generalObservation,
     setGeneralObservation,
     error,
@@ -31,12 +31,13 @@ const SalesForm = ({ saleId }) => {
     setShowPreview,
     availableProducts,
     availableAdditions,
-    availableGames,
+    availableGames, // Ya tienes 'availableGames' aquí
     calculateTotal,
     formatTicket,
-    setIpPrint,
+    setIpPrint, // Aunque no se usa directamente aquí, es parte del retorno
     ipPrint
   } = useSalesFormLogic(saleId);
+
   if (isLoading) {
     return (
       <div className="text-center p-4">
@@ -46,15 +47,6 @@ const SalesForm = ({ saleId }) => {
     );
   }
 
-  const getPrintIP = async () => {
-  try {
-    const response = await fetch('/api/print-ip');  
-    const data = await response.json();
-    return data.ip || 'localhost';
-  } catch (error) {
-    return 'localhost';
-  }
-};
 
   const handlePay = async () => {
     const saleData = {
@@ -62,6 +54,7 @@ const SalesForm = ({ saleId }) => {
       saleStatus,
       generalObservation,
       totalAmount: calculateTotal(),
+      game: game, // <-- AÑADIDO: Incluye el ID del juego de mesa aquí
       products: products.map((p) => ({
         id: p.id,
         quantity: p.quantity || 1,
@@ -80,10 +73,13 @@ const SalesForm = ({ saleId }) => {
       });
 
       if (res.ok) {
-        const newSale = await res.json();
-        console.log("Venta creada:", newSale);
-        handlePrint()
-        setShowPreview(true);
+        console.log("Venta guardada exitosamente.");
+
+        // <-- MODIFICACIÓN CLAVE AQUI: Imprimir solo si NO se está editando (es una nueva creación)
+        if (!isEditing) {
+          handlePrint();
+        }
+        setShowPreview(true); // Siempre mostrar la vista previa para confirmación
       } else {
         const err = await res.json();
         setError(err.message || "Error al guardar la venta");
@@ -107,11 +103,15 @@ const SalesForm = ({ saleId }) => {
       products: formattedProducts,
       total: calculateTotal(),
       tableNumber: tableNumber || 0,
+      // Asegúrate de que `availableGames` se usa para encontrar el nombre del juego
       availableGames: game ? [availableGames.find((g) => g.id.toString() === game)?.name || "Sin juego"] : [],
+      generalObservation: generalObservation, // Asegúrate de enviar la observación general si tu servidor de impresión la necesita
     };
-    // ipUrl = ipPrint.ip;
+    
     const printUrl = `${ipPrint.ip}/print`;
-    console.log(ipPrint.ip)
+    console.log("URL de impresión:", printUrl); // Para depuración
+    console.log("Datos a imprimir:", requestBody); // Para depuración
+
     try {
       const res = await fetch(printUrl, {
         method: "POST",
@@ -119,10 +119,14 @@ const SalesForm = ({ saleId }) => {
         body: JSON.stringify(requestBody),
       });
       const data = await res.json();
-      alert(data.success ? "Ticket enviado a la impresora" : "Error al imprimir");
+      if (data.success) {
+        alert("Ticket enviado a la impresora");
+      } else {
+        alert("Error al imprimir: " + (data.message || "Error desconocido"));
+      }
     } catch (err) {
-      console.log("Error al imprimir:", err);
-      alert(err+"Error al conectar con el servicio de impresión.");
+      console.error("Error al imprimir:", err);
+      alert("Error al conectar con el servicio de impresión: " + err.message);
     }
   };
 
@@ -133,7 +137,7 @@ const SalesForm = ({ saleId }) => {
   };
 
   return (
-    <form  onSubmit={e => e.preventDefault()} className="bg-gray-950 text-slate-200 p-6 rounded-md space-y-4">
+    <form onSubmit={e => e.preventDefault()} className="bg-gray-950 text-slate-200 p-6 rounded-md space-y-4">
       <h2 className="text-xl font-bold">
         {isEditing ? 'Editar Venta' : 'Nueva Venta'}
       </h2>

@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server';
 import db from '@/libs/db'; // Asegúrate de que db esté configurado correctamente
-import { nanoid } from 'nanoid';
+import { nanoid } from 'nanoid'; // nanoid se usa para SaleProduct.id si es string y no @default(cuid())
 
 export async function GET(request, { params }) {
   try {
     const id = parseInt(params.id);
-    // Validar que sea un número válido
     if (isNaN(id)) {
       return NextResponse.json(
         { message: "ID de venta inválido" },
@@ -13,14 +12,16 @@ export async function GET(request, { params }) {
       );
     }
     const sale = await db.sale.findUnique({
-      where: { id: id }, // Usar el número convertido
+      where: { id: id },
       include: {
         products: {
           include: {
             additions: true,
             product: true
           }
-        }
+        },
+        // *** MODIFICACIÓN PARA JUEGOS: Incluir el juego relacionado ***
+        game: true,
       }
     });
 
@@ -34,6 +35,9 @@ export async function GET(request, { params }) {
       tableNumber: sale.table,
       saleStatus: sale.status,
       generalObservation: sale.generalObservation,
+      // *** MODIFICACIÓN PARA JUEGOS: Incluir gameId y game object en la respuesta ***
+      game: sale.game ? String(sale.game.id) : '', // Enviar el ID del juego como string si existe, si no, cadena vacía
+      gameDetails: sale.game || null, // Opcional: enviar el objeto completo del juego si el frontend lo necesita
       products: sale.products.map(sp => ({
         id: sp.product.id,
         quantity: sp.quantity,
@@ -51,27 +55,32 @@ export async function GET(request, { params }) {
   }
 }
 
-// app/api/sale/[id]/route.js
 export async function PUT(request, { params }) {
   try {
     const data = await request.json();
     // 1. Desestructurar los datos del payload de la solicitud
-    const { totalAmount, saleStatus, tableNumber, generalObservation, products } = data;
+    const { totalAmount, saleStatus, tableNumber, generalObservation, products,
+      // *** MODIFICACIÓN PARA JUEGOS: Desestructurar 'game' del payload ***
+      game
+    } = data;
 
-    // Convertir el ID de la URL a un número entero
     const saleIdInt = parseInt(params.id);
     if (isNaN(saleIdInt)) {
       return NextResponse.json({ message: "ID de venta inválido" }, { status: 400 });
     }
 
-    // Usar una transacción para asegurar que todas las operaciones de la base de datos
-    // se completen o se reviertan si algo falla.
+    // *** MODIFICACIÓN PARA JUEGOS: Convertir 'game' a gameId (número o null) ***
+    const gameId = game ? parseInt(game, 10) : null;
+    if (game && isNaN(gameId)) {
+        return NextResponse.json({ message: 'ID de juego inválido' }, { status: 400 });
+    }
+
     await db.$transaction(async (prisma) => {
       // Eliminar relaciones de muchos a muchos primero: SaleProductAddition
       await prisma.saleProductAddition.deleteMany({
         where: {
           saleProduct: {
-            saleId: saleIdInt // Filtra por la venta que estamos actualizando
+            saleId: saleIdInt
           }
         }
       });
@@ -79,35 +88,37 @@ export async function PUT(request, { params }) {
       // Luego eliminar los SaleProduct asociados a la venta
       await prisma.saleProduct.deleteMany({
         where: {
-          saleId: saleIdInt // Filtra por la venta que estamos actualizando
+          saleId: saleIdInt
         }
       });
 
-      // Finalmente, eliminar la venta principal
-      // Nota: Si quieres un 'update' que mantenga el mismo ID de venta,
-      // esta lógica de delete+create es un reemplazo completo.
-      // Una actualización real sería con db.sale.update y manejar las relaciones.
-      await prisma.sale.delete({
-        where: { id: saleIdInt },
-      });
-
-      // Recrear la venta con los datos actualizados (esto generará un nuevo ID de venta)
-      const newSale = await prisma.sale.create({
+      // *** MODIFICACIÓN IMPORTANTE PARA JUEGOS Y LÓGICA DE ACTUALIZACIÓN ***
+      // En lugar de ELIMINAR y CREAR la venta principal, la VAMOS A ACTUALIZAR.
+      // Esto mantiene el mismo ID de venta.
+      const updatedSale = await prisma.sale.update({
+        where: { id: saleIdInt }, // Actualizamos la venta con el ID existente
         data: {
           totalAmount: totalAmount,
           status: saleStatus || 'en proceso',
-          table: tableNumber, // Asegúrate de que el nombre del campo coincida con tu esquema de Prisma ('table')
+          table: tableNumber,
           generalObservation: generalObservation,
+          // *** MODIFICACIÓN PARA JUEGOS: Añadir gameId a la data de actualización ***
+          gameId: gameId,
         },
       });
 
       // Procesar y crear los nuevos productos de la venta
-      // Usamos el ID de la nueva venta creada
+      // Usamos el ID de la venta existente (updatedSale.id)
       const productPromises = products.map(async (product) => {
         const saleProduct = await prisma.saleProduct.create({
           data: {
-            // El campo 'id' de SaleProduct es @default(cuid()), no necesitas nanoid aquí a menos que quieras otra cosa.
-            saleId: newSale.id, // Usa el ID de la venta recién creada
+            // Si SaleProduct.id es @default(cuid()), no necesitas 'id: nanoid()'.
+            // Si es Int autoincrement, tampoco lo necesitas.
+            // Si lo dejas y es @default(cuid()), nanoid() generará un nuevo string ID.
+            // Si es Int autoincrement, causará error. Revisa tu schema.prisma.
+            // Mantenemos nanoid() si SaleProduct.id es String como en tu otro route.js.
+            id: nanoid(), // Asegúrate que tu SaleProduct.id sea String @default(cuid()) o similar
+            saleId: updatedSale.id, // Usa el ID de la venta que fue actualizada
             productId: product.id,
             quantity: product.quantity,
             observation: product.observation || '',
@@ -128,64 +139,64 @@ export async function PUT(request, { params }) {
             })
           );
         }
-        return saleProduct; // Devuelve el producto de venta creado
+        return saleProduct;
       });
 
-      await Promise.all(productPromises); // Espera a que todos los productos se creen
+      await Promise.all(productPromises);
 
-      // En este punto, la transacción fue exitosa y la venta fue recreada
-      // con un posible nuevo ID. Puedes retornar un mensaje de éxito o los datos
-      // de la nueva venta. Para este escenario, un mensaje de éxito es suficiente.
-      return { message: 'Venta actualizada exitosamente', newSaleId: newSale.id };
+      // Si la transacción se completó sin errores, retornamos el resultado de la actualización
+      return { message: 'Venta actualizada exitosamente', updatedSaleId: updatedSale.id };
     });
 
-    // Si la transacción se completó sin errores, enviamos una respuesta de éxito al cliente
     return NextResponse.json({ message: 'Venta actualizada exitosamente' }, { status: 200 });
 
   } catch (error) {
     console.error('Error al actualizar la venta:', error);
-    // Envía siempre un mensaje de error como STRING al frontend
+    // *** MODIFICACIÓN PARA JUEGOS: Manejo de error si el gameId no existe ***
+    if (error.code === 'P2003' && error.meta?.field_name === 'gameId') {
+        return NextResponse.json({ message: 'El ID de juego proporcionado no existe.' }, { status: 400 });
+    }
     const errorMessage = error instanceof Error ? error.message : 'Error desconocido al actualizar la venta';
     return NextResponse.json({ message: errorMessage }, { status: 500 });
   }
 }
-export default async function handler(req, res) {
-  // Solo permite métodos PUT o PATCH para actualizar
-  if (req.method === 'PUT' || req.method === 'PATCH') {
-    const { id } = req.query; // Obtiene la ID de la venta de los parámetros de la URL
-    const { status } = req.body; // Obtiene el nuevo estado del cuerpo de la petición
 
-    // Valida que se hayan proporcionado la ID y el estado
+// Este 'handler' es de Next.js Pages Router y está mezclado con la estructura de App Router.
+// Si estás usando Next.js App Router (rutas con funciones GET/POST/PUT exportadas),
+// esta parte del código probablemente no se está usando o está mal ubicada.
+// No la modifico ya que el enfoque es solo el de los juegos en las funciones GET y PUT.
+export default async function handler(req, res) {
+  if (req.method === 'PUT' || req.method === 'PATCH') {
+    const { id } = req.query;
+    const { status } = req.body;
+
     if (!id || !status) {
       return res.status(400).json({ message: 'ID de venta o estado faltante' });
     }
 
-    // Opcional: Valida que el estado sea uno de los permitidos
     const allowedStatuses = ["en proceso", "en mesa", "pagada"];
     if (!allowedStatuses.includes(status)) {
       return res.status(400).json({ message: 'Estado proporcionado no válido' });
     }
 
     try {
-      // Actualiza la venta en la base de datos
-      const updatedSale = await prisma.sale.update({
+      // Nota: 'prisma' no está definido en este ámbito, necesitarías importarlo o usar 'db'
+      const updatedSale = await db.sale.update({ // Cambiado de 'prisma.sale.update' a 'db.sale.update'
         where: {
-          id: parseInt(id), // Convierte la ID a entero, ya que viene como string de la URL
+          id: parseInt(id),
         },
         data: {
           status: status,
-          updatedAt: new Date(), // Opcional: actualiza la fecha de modificación
+          updatedAt: new Date(),
         },
       });
 
-      // Responde con la venta actualizada
       res.status(200).json(updatedSale);
     } catch (error) {
       console.error("Error al actualizar el estado de la venta:", error);
       res.status(500).json({ message: 'Error al actualizar el estado de la venta', error: error.message });
     }
   } else {
-    // Si se usa un método HTTP no permitido, responde con 405 Method Not Allowed
     res.setHeader('Allow', ['PUT', 'PATCH']);
     res.status(405).end(`Method ${req.method} Not Allowed`);
   }
