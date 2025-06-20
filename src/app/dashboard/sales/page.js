@@ -82,7 +82,7 @@ const SalesForm = ({ saleId }) => {
       if (res.ok) {
         const newSale = await res.json();
         console.log("Venta creada:", newSale);
-        // handlePrint()
+        handlePrint()
         setShowPreview(true);
       } else {
         const err = await res.json();
@@ -111,6 +111,7 @@ const SalesForm = ({ saleId }) => {
     };
     // ipUrl = ipPrint.ip;
     const printUrl = `${ipPrint.ip}/print`;
+    console.log(ipPrint.ip)
     try {
       const res = await fetch(printUrl, {
         method: "POST",

@@ -149,3 +149,44 @@ export async function PUT(request, { params }) {
     return NextResponse.json({ message: errorMessage }, { status: 500 });
   }
 }
+export default async function handler(req, res) {
+  // Solo permite métodos PUT o PATCH para actualizar
+  if (req.method === 'PUT' || req.method === 'PATCH') {
+    const { id } = req.query; // Obtiene la ID de la venta de los parámetros de la URL
+    const { status } = req.body; // Obtiene el nuevo estado del cuerpo de la petición
+
+    // Valida que se hayan proporcionado la ID y el estado
+    if (!id || !status) {
+      return res.status(400).json({ message: 'ID de venta o estado faltante' });
+    }
+
+    // Opcional: Valida que el estado sea uno de los permitidos
+    const allowedStatuses = ["en proceso", "en mesa", "pagada"];
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({ message: 'Estado proporcionado no válido' });
+    }
+
+    try {
+      // Actualiza la venta en la base de datos
+      const updatedSale = await prisma.sale.update({
+        where: {
+          id: parseInt(id), // Convierte la ID a entero, ya que viene como string de la URL
+        },
+        data: {
+          status: status,
+          updatedAt: new Date(), // Opcional: actualiza la fecha de modificación
+        },
+      });
+
+      // Responde con la venta actualizada
+      res.status(200).json(updatedSale);
+    } catch (error) {
+      console.error("Error al actualizar el estado de la venta:", error);
+      res.status(500).json({ message: 'Error al actualizar el estado de la venta', error: error.message });
+    }
+  } else {
+    // Si se usa un método HTTP no permitido, responde con 405 Method Not Allowed
+    res.setHeader('Allow', ['PUT', 'PATCH']);
+    res.status(405).end(`Method ${req.method} Not Allowed`);
+  }
+}
