@@ -12,7 +12,7 @@ function LoginPage() {
   } = useForm();
   const router = useRouter()
   const [error, setError] = useState(null)
-  
+
   const onSubmit = handleSubmit(async (data) => {
     console.log(data);
 
@@ -33,13 +33,15 @@ function LoginPage() {
 
   return (
     <div className="h-[calc(100vh-7rem)] flex justify-center items-center">
-      <form onSubmit={onSubmit} className="w-1/4">
+      {/* *** MODIFICACIÓN AQUÍ *** */}
+      {/* w-full para móviles, md:w-1/2 para pantallas medianas, lg:w-1/4 para pantallas grandes */}
+      <form onSubmit={onSubmit} className="w-full md:w-1/2 lg:w-1/4 p-4"> {/* Añadí un p-4 para padding en móvil */}
 
         {error && (
           <p className="bg-red-500 text-lg text-white p-3 rounded mb-2">{error}</p>
         )}
 
-        <h1 className="text-slate-200 font-bold text-4xl mb-4">Login</h1>
+        <h1 className="text-slate-200 font-bold text-4xl mb-4 text-center">Login</h1> {/* Añadí text-center para centrar el título */}
 
         <label htmlFor="email" className="text-slate-500 mb-2 block text-sm">
           Email:
