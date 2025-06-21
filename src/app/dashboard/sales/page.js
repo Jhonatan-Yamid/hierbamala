@@ -62,7 +62,7 @@ const SalesForm = ({ saleId }) => {
       products: products.map((p) => ({
         id: p.id,
         quantity: p.quantity || 1,
-        observation: p.observation,
+        observation: p.observation === "" || p.observation === undefined ? null : p.observation,
         additions: p.additions?.map((a) => ({ id: a.id || a.name, name: a.name, price: a.price })) || [],
       })),
     };

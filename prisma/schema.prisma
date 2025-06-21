@@ -1,6 +1,6 @@
 generator client {
   provider = "prisma-client-js"
-  log      = ["query"]   // Esto habilita los logs de las consultas SQL
+  log      = ["query"]
 }
 
 datasource db {
@@ -9,14 +9,21 @@ datasource db {
   shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
-model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  username  String   @unique
-  password  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  role      Int?
+model Alert {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  alertTime   DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt // Ajustado
+  repeatDay   Int?
+  repeatWeekly Boolean @default(false)
+}
+
+model Game {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  sales Sale[] // Ajustado
 }
 
 model Ingredient {
@@ -27,9 +34,9 @@ model Ingredient {
   quantity    Float?
   typeUnity   String
   createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  updatedAt   DateTime          @updatedAt // Ajustado
   Origin      String            @default("Desconocido")
-  products    ProductIngredient[]
+  products    ProductIngredient[] // Ajustado
 }
 
 model Product {
@@ -38,112 +45,94 @@ model Product {
   description String?           @db.Text
   price       Float
   createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  updatedAt   DateTime          @updatedAt // Ajustado
   category    String            @default("Desconocida")
-  ingredients ProductIngredient[] // Relación con los ingredientes
-  sales       SaleProduct[]     // Relación con las ventas
+  ingredients ProductIngredient[] // Ajustado
+  sales       SaleProduct[]     // Ajustado
 }
 
 model ProductIngredient {
   productId    Int
   ingredientId Int
   quantity     Int
-  createdAt    DateTime          @default(now())
-  ingredient   Ingredient        @relation(fields: [ingredientId], references: [id])
-  product      Product           @relation(fields: [productId], references: [id])
+  createdAt    DateTime   @default(now())
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id]) // Ajustado
+  product      Product    @relation(fields: [productId], references: [id])    // Ajustado
 
   @@id([productId, ingredientId])
   @@index([ingredientId], map: "ProductIngredient_ingredientId_fkey")
 }
 
-// *** AÑADIDO: Modelo para Juegos de Mesa ***
-model Game {
-  id    Int     @id @default(autoincrement())
-  name  String  @unique // Nombre del juego de mesa
-  // Puedes añadir más campos si necesitas:
-  // description String?
-  // minPlayers  Int?
-  // maxPlayers  Int?
-  sales Sale[] // Una relación para que un juego pueda tener varias ventas
+model Provider {
+  id            Int      @id @default(autoincrement())
+  name          String
+  description   String?
+  accountNumber String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt // Ajustado
 }
 
-
 model Sale {
-  id                 Int      @id @default(autoincrement())
+  id                 Int         @id @default(autoincrement())
   totalAmount        Float
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt // Ajustado
   status             String
-  table              String   // Cambiado a String para consistencia si es un identificador de mesa
-  generalObservation String?  // Observación general de la venta
-  gameId             Int?     // Clave foránea para el juego de mesa (puede ser nulo si no hay juego)
-  game               Game?    @relation(fields: [gameId], references: [id]) // Relación con el modelo Game
-  products           SaleProduct[] // Relación con los productos vendidos
-  orderType        String    @default("En mesa")
+  table              String
+  generalObservation String?
+  gameId             Int?
+  orderType          String      @default("En mesa")
+  game               Game?       @relation(fields: [gameId], references: [id]) // Ajustado
+  products           SaleProduct[] // Ajustado
+
+  @@index([gameId], map: "Sale_gameId_fkey")
 }
 
 model SaleProduct {
-  id            String                @id @default(cuid()) // Usamos cuid() para un id único por cada producto-venta
+  id            String            @id @default(cuid()) // Ajustado
   saleId        Int
   productId     Int
   quantity      Int
-  observation   String?
-  additions     SaleProductAddition[] // Relación con las adiciones
+  observation   String?           // Confirmado
 
-  sale          Sale                  @relation(fields: [saleId], references: [id])
-  product       Product               @relation(fields: [productId], references: [id])
+  additions     SaleProductAddition[]
 
-  @@unique([saleId, productId, observation]) // Aseguramos que cada combinación de venta-producto-observación sea única
-}
+  product       Product           @relation(fields: [productId], references: [id]) // Ajustado
+  sale          Sale              @relation(fields: [saleId], references: [id])    // Ajustado
 
-
-model Provider {
-  id          Int      @id @default(autoincrement())
-  name        String
-  description String?
-  accountNumber String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-model Alert {
-  id          Int      @id @default(autoincrement())
-  title       String
-  description String
-  alertTime   DateTime
-  repeatWeekly Boolean @default(false)   // Nuevo campo para indicar si es semanal
-  repeatDay   Int?     // Representa el día de la semana (0=Domingo, 1=Lunes, ..., 6=Sábado)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-
-model Subscription {
-  id            Int       @id @default(autoincrement())
-  endpoint      String    @unique
-  expirationTime DateTime?
-  keys          Json
+  // Las líneas @@index con "_temp_" fueron eliminadas aquí
 }
 
 model SaleProductAddition {
-  id            Int       @id @default(autoincrement())
+  id          Int         @id @default(autoincrement())
   saleProductId String
-  name          String
-  price         Float
-  additionId    Int?
-
-  saleProduct   SaleProduct @relation(fields: [saleProductId], references: [id])
-
- // Si additionId se relaciona con Product, añade la relación aquí:
-  // addition      Product?    @relation(fields: [additionId], references: [id])
+  name        String
+  price       Float
+  additionId  Int?
+  saleProduct SaleProduct @relation(fields: [saleProductId], references: [id]) // Ajustado
 
   @@index([saleProductId])
-  // Si usas additionId como relación, añade un index para él también
-  // @@index([additionId])
+}
+
+model Subscription {
+  id             Int       @id @default(autoincrement())
+  endpoint       String    @unique
+  expirationTime DateTime?
+  keys           Json      // Ajustado
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  username  String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt // Ajustado
+  role      Int?
 }
 
 model Utils {
-  id        Int      @id @default(autoincrement())
-  ipv4      String
-  created_at DateTime @updatedAt
+  id         Int      @id @default(autoincrement())
+  ipv4       String
+  created_at DateTime @updatedAt // Ajustado
 }
