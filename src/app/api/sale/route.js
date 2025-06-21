@@ -12,12 +12,7 @@ export async function GET() {
 
     // Consultar las ventas realizadas hoy
     const sales = await db.sale.findMany({
-      where: {
-        updatedAt: {
-          gte: startOfDay, // Mayor o igual a la medianoche
-          lte: endOfDay,   // Menor o igual al final del día
-        },
-      },
+      
       include: {
         products: {
           include: {

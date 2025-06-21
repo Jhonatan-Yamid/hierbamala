@@ -19,21 +19,35 @@ function DailySales() {
         const today = new Date();
         return new Date(today.getFullYear(), today.getMonth(), today.getDate());
     };
+    const getOperationalDayRange = () => {
+        const now = new Date();
+
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 15); // 3:00 p.m.
+        const endOfToday = new Date(startOfToday);
+        endOfToday.setDate(endOfToday.getDate() + 1);
+        endOfToday.setHours(7, 0, 0, 0); // 4:00 a.m. del siguiente día
+
+        if (now < endOfToday && now.getHours() < 7) {
+            startOfToday.setDate(startOfToday.getDate() - 1);
+            endOfToday.setDate(endOfToday.getDate() - 1);
+        }
+
+        return { start: startOfToday, end: endOfToday };
+    };
 
     const fetchSalesData = useCallback(async () => {
         try {
             const res = await fetch("/api/sale");
             const data = await res.json();
-            const today = getTodayDate();
+
+            const { start, end } = getOperationalDayRange();
 
             const salesToday = [];
             const salesPast = [];
 
             data.forEach((sale) => {
                 const saleDate = new Date(sale.updatedAt);
-                const normalized = new Date(saleDate.getFullYear(), saleDate.getMonth(), saleDate.getDate());
-
-                if (normalized.getTime() === today.getTime()) {
+                if (saleDate >= start && saleDate < end) {
                     salesToday.push(sale);
                 } else {
                     salesPast.push(sale);
@@ -163,7 +177,7 @@ function DailySales() {
                                         style: "currency",
                                         currency: "CLP",
                                     }).format(sale.totalAmount)}
-                                                </span>
+                                </span>
                                 <Link href={`/dashboard/sales/${sale.id}`}>
                                     <button className="ml-4 text-gray-600 hover:text-gray-200 text-3xl">
                                         <FaEdit />
