@@ -3,26 +3,39 @@ import db from '@/libs/db';
 
 export async function GET(request) {
   try {
-    // Obtener el término de búsqueda de los parámetros de la URL
     const url = new URL(request.url);
     const searchQuery = url.searchParams.get('search') || '';
+    const categoryQuery = url.searchParams.get('category'); // <-- NUEVO: Obtener el parámetro 'category'
 
-    // Buscar productos que contengan el término de búsqueda en su nombre
+    // Construir el objeto 'where' para la consulta a la base de datos
+    const whereClause = {};
+
+    if (searchQuery) {
+      whereClause.name = {
+        contains: searchQuery, // Búsqueda por nombre del producto
+        mode: 'insensitive', // Opcional: para que la búsqueda no distinga mayúsculas/minúsculas
+      };
+    }
+
+    if (categoryQuery) {
+      whereClause.category = categoryQuery; // <-- NUEVO: Filtrar por categoría si está presente
+    }
+
+    // Buscar productos que contengan el término de búsqueda en su nombre Y/O la categoría especificada
     const products = await db.product.findMany({
-      where: {
-        name: {
-          contains: searchQuery, // Búsqueda por nombre del producto
-        },
-      },
+      where: whereClause, // Usar el objeto 'whereClause' construido dinámicamente
       select: {
         id: true,
         name: true,
-        price: true,  // Solo devolver id, nombre y precio
+        price: true,
+        // Si tu modelo 'Product' tiene un campo 'category', también podrías seleccionarlo si lo necesitas
+        // category: true,
       },
     });
 
-    return NextResponse.json(products, { status: 200 });  // Devolver los productos encontrados
+    return NextResponse.json(products, { status: 200 });
   } catch (error) {
+    console.error("Error al obtener productos:", error); // Log más detallado
     return NextResponse.json({ message: error.message }, { status: 500 });
   }
 }

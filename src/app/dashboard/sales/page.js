@@ -21,8 +21,8 @@ const SalesForm = ({ saleId }) => {
     setTableNumber,
     saleStatus,
     setSaleStatus,
-    game, // Ya tienes 'game' aquí
-    setGame, // Ya tienes 'setGame' aquí
+    game,
+    setGame,
     generalObservation,
     setGeneralObservation,
     error,
@@ -30,11 +30,12 @@ const SalesForm = ({ saleId }) => {
     showPreview,
     setShowPreview,
     availableProducts,
-    availableAdditions,
-    availableGames, // Ya tienes 'availableGames' aquí
+    // availableAdditions ahora viene de la DB a través del hook
+    availableAdditions, // <-- No hay cambio aquí, el hook lo renombra
+    availableGames,
     calculateTotal,
     formatTicket,
-    setIpPrint, // Aunque no se usa directamente aquí, es parte del retorno
+    setIpPrint,
     ipPrint
   } = useSalesFormLogic(saleId);
 
@@ -54,12 +55,12 @@ const SalesForm = ({ saleId }) => {
       saleStatus,
       generalObservation,
       totalAmount: calculateTotal(),
-      game: game, // <-- AÑADIDO: Incluye el ID del juego de mesa aquí
+      game: game,
       products: products.map((p) => ({
         id: p.id,
         quantity: p.quantity || 1,
         observation: p.observation,
-        additions: p.additions?.map((a) => ({ name: a.name, price: a.price })) || [],
+        additions: p.additions?.map((a) => ({ id: a.id || a.name, name: a.name, price: a.price })) || [], // Asegúrate de que las adiciones también tengan 'id' si tu DB lo provee
       })),
     };
 
@@ -75,11 +76,10 @@ const SalesForm = ({ saleId }) => {
       if (res.ok) {
         console.log("Venta guardada exitosamente.");
 
-        // <-- MODIFICACIÓN CLAVE AQUI: Imprimir solo si NO se está editando (es una nueva creación)
         if (!isEditing) {
           handlePrint();
         }
-        setShowPreview(true); // Siempre mostrar la vista previa para confirmación
+        setShowPreview(true);
       } else {
         const err = await res.json();
         setError(err.message || "Error al guardar la venta");
@@ -103,14 +103,13 @@ const SalesForm = ({ saleId }) => {
       products: formattedProducts,
       total: calculateTotal(),
       tableNumber: tableNumber || 0,
-      // Asegúrate de que `availableGames` se usa para encontrar el nombre del juego
       availableGames: game ? [availableGames.find((g) => g.id.toString() === game)?.name || "Sin juego"] : [],
-      generalObservation: generalObservation, // Asegúrate de enviar la observación general si tu servidor de impresión la necesita
+      generalObservation: generalObservation,
     };
     
     const printUrl = `${ipPrint.ip}/print`;
-    console.log("URL de impresión:", printUrl); // Para depuración
-    console.log("Datos a imprimir:", requestBody); // Para depuración
+    console.log("URL de impresión:", printUrl);
+    console.log("Datos a imprimir:", requestBody);
 
     try {
       const res = await fetch(printUrl, {
@@ -154,7 +153,8 @@ const SalesForm = ({ saleId }) => {
       <ProductList
         products={products}
         setProducts={setProducts}
-        availableAdditions={availableAdditions}
+        // availableAdditions ahora contiene los datos de la DB
+        availableAdditions={availableAdditions} // <-- Se sigue pasando la misma prop
         availableProducts={availableProducts}
       />
 

@@ -1,34 +1,33 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react"; // Asegúrate de importar useCallback
+import React, { useEffect, useState, useCallback } from "react";
 
-// Eliminamos el array hardcodeado de availableGames de aquí
-
-const availableAdditions = [
-  { id: "Queso Pequeño", name: "Queso Pequeño", price: 1500 },
-  { id: "Tocineta Pequeña", name: "Tocineta Pequeña", price: 1500 },
-  { id: "Queso Grande", name: "Queso Grande", price: 3000 },
-  { id: "Tocineta Grande", name: "Tocineta Grande", price: 3000 },
-  { id: "Carne Desmechada", name: "Carne Desmechada", price: 3000 },
-  { id: "Pollo Desmechada", name: "Pollo Desmechada", price: 3000 },
-  { id: "Maiz", name: "Maiz", price: 3000 },
-  { id: "Champiñones", name: "Champiñones", price: 3000 },
-  { id: "Chorizo", name: "Chorizo", price: 3000 },
-  { id: "Salchicha", name: "Salchicha", price: 3000 },
-  { id: "Jamón", name: "Jamón", price: 3000 },
-  { id: "Papas Francesas pequeñas", name: "Papas Francesas pequeñas", price: 3000 },
-  { id: "Papas Francesas grandes", name: "Papas Francesas grandes", price: 7000 },
-  { id: "Papas Criollas pequeñas", name: "Papas Criollas pequeñas", price: 3000 },
-  { id: "Papas Criollas grandes", name: "Papas Criollas grandes", price: 7000 },
-  { id: "Yucas pequeñas", name: "Yucas pequeñas", price: 3000 },
-  { id: "Yucas grandes", name: "Papas Francesas grandes", price: 7000 },
-  { id: "Medio Chicharrón", name: "Medio Chicharrón", price: 8000 },
-];
+// ELIMINA ESTE ARRAY HARCODEADO
+// const availableAdditions = [
+//  { id: "Queso Pequeño", name: "Queso Pequeño", price: 1500 },
+//  { id: "Tocineta Pequeña", name: "Tocineta Pequeña", price: 1500 },
+//  { id: "Queso Grande", name: "Queso Grande", price: 3000 },
+//  { id: "Tocineta Grande", name: "Tocineta Grande", price: 3000 },
+//  { id: "Carne Desmechada", name: "Carne Desmechada", price: 3000 },
+//  { id: "Pollo Desmechada", name: "Pollo Desmechada", price: 3000 },
+//  { id: "Maiz", name: "Maiz", price: 3000 },
+//  { id: "Champiñones", name: "Champiñones", price: 3000 },
+//  { id: "Chorizo", name: "Chorizo", price: 3000 },
+//  { id: "Salchicha", name: "Salchicha", price: 3000 },
+//  { id: "Jamón", name: "Jamón", price: 3000 },
+//  { id: "Papas Francesas pequeñas", name: "Papas Francesas pequeñas", price: 3000 },
+//  { id: "Papas Francesas grandes", name: "Papas Francesas grandes", price: 7000 },
+//  { id: "Papas Criollas pequeñas", name: "Papas Criollas pequeñas", price: 3000 },
+//  { id: "Papas Criollas grandes", name: "Papas Criollas grandes", price: 7000 },
+//  { id: "Yucas pequeñas", name: "Yucas pequeñas", price: 3000 },
+//  { id: "Yucas grandes", name: "Papas Francesas grandes", price: 7000 },
+//  { id: "Medio Chicharrón", name: "Medio Chicharrón", price: 8000 },
+// ];
 
 
 // hooks/useSalesFormLogic.js
 const useSalesFormLogic = (saleId) => {
-  const [isLoading, setIsLoading] = useState(true); // Inicializamos en true
+  const [isLoading, setIsLoading] = useState(true);
   const [products, setProducts] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [suggestions, setSuggestions] = useState([]);
@@ -39,16 +38,17 @@ const useSalesFormLogic = (saleId) => {
   const [error, setError] = useState("");
   const [showPreview, setShowPreview] = useState(false);
   const [availableProducts, setAvailableProducts] = useState([]);
-  const [availableGames, setAvailableGames] = useState([]); // *** NUEVO: Estado para los juegos de la DB ***
+  const [availableGames, setAvailableGames] = useState([]);
   const [ipPrint, setIpPrint] = useState({ ip: '' });
+  // *** NUEVO: Estado para las adiciones cargadas de la DB ***
+  const [availableFetchedAdditions, setAvailableFetchedAdditions] = useState([]);
 
   const isEditing = !!saleId;
 
-  // Creamos una función useCallback para la carga inicial de datos
   const fetchInitialData = useCallback(async () => {
     setIsLoading(true);
     try {
-      // 1. Cargar productos
+      // 1. Cargar productos (todos los productos)
       const productsRes = await fetch("/api/product");
       if (!productsRes.ok) throw new Error('Error cargando productos');
       const productsData = await productsRes.json();
@@ -61,14 +61,21 @@ const useSalesFormLogic = (saleId) => {
       const ipData = await ipRes.json();
       setIpPrint({ ip: ipData.ip || '' });
 
-      // 3. *** NUEVO: Cargar Juegos de Mesa desde la API ***
-      const gamesRes = await fetch('/api/game'); // Llama a tu endpoint de API de juegos
+      // 3. Cargar Juegos de Mesa desde la API
+      const gamesRes = await fetch('/api/game');
       if (!gamesRes.ok) throw new Error('Error cargando juegos');
       const gamesData = await gamesRes.json();
       if (!Array.isArray(gamesData)) throw new Error('Formato de juegos inválido');
-      setAvailableGames(gamesData); // Guarda los juegos en el estado
+      setAvailableGames(gamesData);
 
-      // 4. Si es edición, cargar datos de la venta específica
+      // 4. *** NUEVO: Cargar Adiciones desde la API (filtrando por categoría) ***
+      const additionsRes = await fetch('/api/product?category=adiciones'); // Asume que tu API de producto puede filtrar por categoría
+      if (!additionsRes.ok) throw new Error('Error cargando adiciones');
+      const additionsData = await additionsRes.json();
+      if (!Array.isArray(additionsData)) throw new Error('Formato de adiciones inválido');
+      setAvailableFetchedAdditions(additionsData); // Guarda las adiciones en el estado
+
+      // 5. Si es edición, cargar datos de la venta específica
       if (saleId) {
         const numericId = Number(saleId);
         const saleRes = await fetch(`/api/sale/${numericId}`);
@@ -89,10 +96,10 @@ const useSalesFormLogic = (saleId) => {
         }));
 
         setProducts(mappedProducts);
-        setTableNumber(saleData.table?.toString() || ""); // Usar 'table' del modelo Sale
-        setSaleStatus(saleData.status || "en proceso"); // Usar 'status' del modelo Sale
+        setTableNumber(saleData.table?.toString() || "");
+        setSaleStatus(saleData.status || "en proceso");
         setGeneralObservation(saleData.generalObservation || "");
-        setGame(saleData.gameId?.toString() || ""); // *** NUEVO: Cargar el juego seleccionado ***
+        setGame(saleData.gameId?.toString() || "");
       }
 
     } catch (error) {
@@ -101,9 +108,8 @@ const useSalesFormLogic = (saleId) => {
     } finally {
       setIsLoading(false);
     }
-  }, [saleId]); // `saleId` es una dependencia porque la lógica de carga de venta depende de ella
+  }, [saleId]);
 
-  // Ejecutar la carga inicial de datos al montar el componente o cambiar saleId
   useEffect(() => {
     fetchInitialData();
   }, [fetchInitialData]);
@@ -125,7 +131,6 @@ const useSalesFormLogic = (saleId) => {
       "es-CO"
     )} ***\n`;
     ticket += `Mesa: ${tableNumber}\n`;
-    // Asegúrate de buscar el nombre del juego usando el estado `game` y la lista `availableGames`
     ticket += `Juego: ${availableGames.find((g) => g.id.toString() === game)?.name || "N/A"
       }\n`;
     ticket += `------------------------------------------\nCant\t Productos\n`;
@@ -176,13 +181,12 @@ const useSalesFormLogic = (saleId) => {
     showPreview,
     setShowPreview,
     availableProducts,
-    // setAvailableProducts, // No es necesario retornar el setter si solo se usa internamente
-    availableAdditions,
-    availableGames, // *** RETORNAMOS EL ESTADO availableGames CARGADO DE LA DB ***
+    // REMPLAZAMOS EL ARRAY HARCODEADO POR LAS ADICIONES CARGADAS DE LA DB
+    availableAdditions: availableFetchedAdditions, // <-- ¡Cambio aquí!
+    availableGames,
     calculateTotal,
     formatTicket,
     ipPrint,
-    // setIpPrint // No es necesario retornar el setter si solo se usa internamente
   };
 };
 
