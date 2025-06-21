@@ -1,3 +1,4 @@
+// components/SalesForm.jsx
 "use client";
 
 import React from "react";
@@ -30,13 +31,15 @@ const SalesForm = ({ saleId }) => {
     showPreview,
     setShowPreview,
     availableProducts,
-    // availableAdditions ahora viene de la DB a través del hook
-    availableAdditions, // <-- No hay cambio aquí, el hook lo renombra
+    availableAdditions,
     availableGames,
     calculateTotal,
     formatTicket,
     setIpPrint,
-    ipPrint
+    ipPrint,
+    // NUEVO: Importar orderType y setOrderType
+    orderType,
+    setOrderType,
   } = useSalesFormLogic(saleId);
 
   if (isLoading) {
@@ -48,7 +51,6 @@ const SalesForm = ({ saleId }) => {
     );
   }
 
-
   const handlePay = async () => {
     const saleData = {
       tableNumber,
@@ -56,11 +58,12 @@ const SalesForm = ({ saleId }) => {
       generalObservation,
       totalAmount: calculateTotal(),
       game: game,
+      orderType, // NUEVO: Incluir orderType en el payload
       products: products.map((p) => ({
         id: p.id,
         quantity: p.quantity || 1,
         observation: p.observation,
-        additions: p.additions?.map((a) => ({ id: a.id || a.name, name: a.name, price: a.price })) || [], // Asegúrate de que las adiciones también tengan 'id' si tu DB lo provee
+        additions: p.additions?.map((a) => ({ id: a.id || a.name, name: a.name, price: a.price })) || [],
       })),
     };
 
@@ -105,8 +108,9 @@ const SalesForm = ({ saleId }) => {
       tableNumber: tableNumber || 0,
       availableGames: game ? [availableGames.find((g) => g.id.toString() === game)?.name || "Sin juego"] : [],
       generalObservation: generalObservation,
+      orderType: orderType, // NUEVO: Incluir orderType en los datos de impresión
     };
-    
+
     const printUrl = `${ipPrint.ip}/print`;
     console.log("URL de impresión:", printUrl);
     console.log("Datos a imprimir:", requestBody);
@@ -153,8 +157,7 @@ const SalesForm = ({ saleId }) => {
       <ProductList
         products={products}
         setProducts={setProducts}
-        // availableAdditions ahora contiene los datos de la DB
-        availableAdditions={availableAdditions} // <-- Se sigue pasando la misma prop
+        availableAdditions={availableAdditions}
         availableProducts={availableProducts}
       />
 
@@ -166,6 +169,9 @@ const SalesForm = ({ saleId }) => {
         availableGames={availableGames}
         generalObservation={generalObservation}
         setGeneralObservation={setGeneralObservation}
+        // NUEVO: Pasar orderType y setOrderType
+        orderType={orderType}
+        setOrderType={setOrderType}
       />
 
       {error && <div className="text-red-500 text-sm">{error}</div>}

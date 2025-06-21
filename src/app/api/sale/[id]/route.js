@@ -1,3 +1,4 @@
+// src/app/api/sale/[id]/route.js
 import { NextResponse } from 'next/server';
 import db from '@/libs/db'; // Asegúrate de que db esté configurado correctamente
 import { nanoid } from 'nanoid'; // nanoid se usa para SaleProduct.id si es string y no @default(cuid())
@@ -38,6 +39,8 @@ export async function GET(request, { params }) {
       // *** MODIFICACIÓN PARA JUEGOS: Incluir gameId y game object en la respuesta ***
       game: sale.game ? String(sale.game.id) : '', // Enviar el ID del juego como string si existe, si no, cadena vacía
       gameDetails: sale.game || null, // Opcional: enviar el objeto completo del juego si el frontend lo necesita
+      // AÑADIR: orderType para el GET
+      orderType: sale.orderType || "En mesa", // Asumiendo un default si no está presente
       products: sale.products.map(sp => ({
         id: sp.product.id,
         quantity: sp.quantity,
@@ -59,9 +62,14 @@ export async function PUT(request, { params }) {
   try {
     const data = await request.json();
     // 1. Desestructurar los datos del payload de la solicitud
-    const { totalAmount, saleStatus, tableNumber, generalObservation, products,
-      // *** MODIFICACIÓN PARA JUEGOS: Desestructurar 'game' del payload ***
-      game
+    const {
+      totalAmount,
+      saleStatus,
+      tableNumber,
+      generalObservation,
+      products,
+      game,
+      orderType // <--- MODIFICACIÓN MÍNIMA 1: Desestructurar orderType
     } = data;
 
     const saleIdInt = parseInt(params.id);
@@ -72,7 +80,7 @@ export async function PUT(request, { params }) {
     // *** MODIFICACIÓN PARA JUEGOS: Convertir 'game' a gameId (número o null) ***
     const gameId = game ? parseInt(game, 10) : null;
     if (game && isNaN(gameId)) {
-        return NextResponse.json({ message: 'ID de juego inválido' }, { status: 400 });
+      return NextResponse.json({ message: 'ID de juego inválido' }, { status: 400 });
     }
 
     await db.$transaction(async (prisma) => {
@@ -104,6 +112,7 @@ export async function PUT(request, { params }) {
           generalObservation: generalObservation,
           // *** MODIFICACIÓN PARA JUEGOS: Añadir gameId a la data de actualización ***
           gameId: gameId,
+          orderType: orderType, // <--- MODIFICACIÓN MÍNIMA 2: Añadir orderType a la data de actualización
         },
       });
 
@@ -112,12 +121,7 @@ export async function PUT(request, { params }) {
       const productPromises = products.map(async (product) => {
         const saleProduct = await prisma.saleProduct.create({
           data: {
-            // Si SaleProduct.id es @default(cuid()), no necesitas 'id: nanoid()'.
-            // Si es Int autoincrement, tampoco lo necesitas.
-            // Si lo dejas y es @default(cuid()), nanoid() generará un nuevo string ID.
-            // Si es Int autoincrement, causará error. Revisa tu schema.prisma.
-            // Mantenemos nanoid() si SaleProduct.id es String como en tu otro route.js.
-            id: nanoid(), // Asegúrate que tu SaleProduct.id sea String @default(cuid()) o similar
+            id: nanoid(),
             saleId: updatedSale.id, // Usa el ID de la venta que fue actualizada
             productId: product.id,
             quantity: product.quantity,
@@ -154,7 +158,7 @@ export async function PUT(request, { params }) {
     console.error('Error al actualizar la venta:', error);
     // *** MODIFICACIÓN PARA JUEGOS: Manejo de error si el gameId no existe ***
     if (error.code === 'P2003' && error.meta?.field_name === 'gameId') {
-        return NextResponse.json({ message: 'El ID de juego proporcionado no existe.' }, { status: 400 });
+      return NextResponse.json({ message: 'El ID de juego proporcionado no existe.' }, { status: 400 });
     }
     const errorMessage = error instanceof Error ? error.message : 'Error desconocido al actualizar la venta';
     return NextResponse.json({ message: errorMessage }, { status: 500 });

@@ -1,31 +1,8 @@
+// hooks/useSalesFormLogic.js
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";
 
-// ELIMINA ESTE ARRAY HARCODEADO
-// const availableAdditions = [
-//  { id: "Queso Pequeño", name: "Queso Pequeño", price: 1500 },
-//  { id: "Tocineta Pequeña", name: "Tocineta Pequeña", price: 1500 },
-//  { id: "Queso Grande", name: "Queso Grande", price: 3000 },
-//  { id: "Tocineta Grande", name: "Tocineta Grande", price: 3000 },
-//  { id: "Carne Desmechada", name: "Carne Desmechada", price: 3000 },
-//  { id: "Pollo Desmechada", name: "Pollo Desmechada", price: 3000 },
-//  { id: "Maiz", name: "Maiz", price: 3000 },
-//  { id: "Champiñones", name: "Champiñones", price: 3000 },
-//  { id: "Chorizo", name: "Chorizo", price: 3000 },
-//  { id: "Salchicha", name: "Salchicha", price: 3000 },
-//  { id: "Jamón", name: "Jamón", price: 3000 },
-//  { id: "Papas Francesas pequeñas", name: "Papas Francesas pequeñas", price: 3000 },
-//  { id: "Papas Francesas grandes", name: "Papas Francesas grandes", price: 7000 },
-//  { id: "Papas Criollas pequeñas", name: "Papas Criollas pequeñas", price: 3000 },
-//  { id: "Papas Criollas grandes", name: "Papas Criollas grandes", price: 7000 },
-//  { id: "Yucas pequeñas", name: "Yucas pequeñas", price: 3000 },
-//  { id: "Yucas grandes", name: "Papas Francesas grandes", price: 7000 },
-//  { id: "Medio Chicharrón", name: "Medio Chicharrón", price: 8000 },
-// ];
-
-
-// hooks/useSalesFormLogic.js
 const useSalesFormLogic = (saleId) => {
   const [isLoading, setIsLoading] = useState(true);
   const [products, setProducts] = useState([]);
@@ -40,8 +17,9 @@ const useSalesFormLogic = (saleId) => {
   const [availableProducts, setAvailableProducts] = useState([]);
   const [availableGames, setAvailableGames] = useState([]);
   const [ipPrint, setIpPrint] = useState({ ip: '' });
-  // *** NUEVO: Estado para las adiciones cargadas de la DB ***
   const [availableFetchedAdditions, setAvailableFetchedAdditions] = useState([]);
+  // NUEVO: Estado para orderType
+  const [orderType, setOrderType] = useState("En mesa"); // Default a "En mesa"
 
   const isEditing = !!saleId;
 
@@ -68,12 +46,12 @@ const useSalesFormLogic = (saleId) => {
       if (!Array.isArray(gamesData)) throw new Error('Formato de juegos inválido');
       setAvailableGames(gamesData);
 
-      // 4. *** NUEVO: Cargar Adiciones desde la API (filtrando por categoría) ***
-      const additionsRes = await fetch('/api/product?category=adiciones'); // Asume que tu API de producto puede filtrar por categoría
+      // 4. Cargar Adiciones desde la API
+      const additionsRes = await fetch('/api/product?category=adiciones');
       if (!additionsRes.ok) throw new Error('Error cargando adiciones');
       const additionsData = await additionsRes.json();
       if (!Array.isArray(additionsData)) throw new Error('Formato de adiciones inválido');
-      setAvailableFetchedAdditions(additionsData); // Guarda las adiciones en el estado
+      setAvailableFetchedAdditions(additionsData);
 
       // 5. Si es edición, cargar datos de la venta específica
       if (saleId) {
@@ -87,7 +65,7 @@ const useSalesFormLogic = (saleId) => {
         const mappedProducts = saleData.products.map(p => ({
           ...p,
           additions: p.additions?.map(a => ({
-            id: a.id || a.name,
+            id: a.id || a.name, // Asegúrate de que el id sea adecuado para tu frontend
             name: a.name,
             price: a.price
           })) || [],
@@ -100,6 +78,7 @@ const useSalesFormLogic = (saleId) => {
         setSaleStatus(saleData.status || "en proceso");
         setGeneralObservation(saleData.generalObservation || "");
         setGame(saleData.gameId?.toString() || "");
+        setOrderType(saleData.orderType || "En mesa"); // NUEVO: Setear el tipo de pedido
       }
 
     } catch (error) {
@@ -133,6 +112,7 @@ const useSalesFormLogic = (saleId) => {
     ticket += `Mesa: ${tableNumber}\n`;
     ticket += `Juego: ${availableGames.find((g) => g.id.toString() === game)?.name || "N/A"
       }\n`;
+    ticket += `Tipo de Pedido: ${orderType}\n`; // NUEVO: Añadir al ticket
     ticket += `------------------------------------------\nCant\t Productos\n`;
 
     const grouped = products.reduce((acc, p) => {
@@ -159,6 +139,7 @@ const useSalesFormLogic = (saleId) => {
 
     return ticket;
   };
+
   return {
     isLoading,
     isEditing,
@@ -181,12 +162,14 @@ const useSalesFormLogic = (saleId) => {
     showPreview,
     setShowPreview,
     availableProducts,
-    // REMPLAZAMOS EL ARRAY HARCODEADO POR LAS ADICIONES CARGADAS DE LA DB
-    availableAdditions: availableFetchedAdditions, // <-- ¡Cambio aquí!
+    availableAdditions: availableFetchedAdditions,
     availableGames,
     calculateTotal,
     formatTicket,
     ipPrint,
+    // NUEVO: Exportar orderType y setOrderType
+    orderType,
+    setOrderType,
   };
 };
 

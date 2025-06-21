@@ -76,12 +76,10 @@ model Sale {
   status             String
   table              String   // Cambiado a String para consistencia si es un identificador de mesa
   generalObservation String?  // Observación general de la venta
-  
-  // *** AÑADIDO/CORREGIDO: Relación con el modelo Game ***
   gameId             Int?     // Clave foránea para el juego de mesa (puede ser nulo si no hay juego)
   game               Game?    @relation(fields: [gameId], references: [id]) // Relación con el modelo Game
-
   products           SaleProduct[] // Relación con los productos vendidos
+  orderType        String    @default("En mesa")
 }
 
 model SaleProduct {
@@ -132,10 +130,16 @@ model SaleProductAddition {
   saleProductId String
   name          String
   price         Float
+  additionId    Int?
 
   saleProduct   SaleProduct @relation(fields: [saleProductId], references: [id])
 
+ // Si additionId se relaciona con Product, añade la relación aquí:
+  // addition      Product?    @relation(fields: [additionId], references: [id])
+
   @@index([saleProductId])
+  // Si usas additionId como relación, añade un index para él también
+  // @@index([additionId])
 }
 
 model Utils {

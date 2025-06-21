@@ -1,3 +1,4 @@
+// components/SaleInfoFields.jsx
 "use client";
 import React from "react";
 
@@ -9,6 +10,8 @@ const SaleInfoFields = ({
   availableGames,
   generalObservation,
   setGeneralObservation,
+  orderType,
+  setOrderType,
 }) => {
   return (
     <>
@@ -23,6 +26,23 @@ const SaleInfoFields = ({
           onChange={(e) => setTableNumber(e.target.value)}
           className="w-full p-2 mt-1 bg-gray-900 border border-gray-700 rounded-md"
         />
+      </div>
+
+      {/* NUEVO: Campo para Tipo de Pedido */}
+      <div>
+        <label htmlFor="orderType" className="block text-sm font-medium">
+          Tipo de Pedido
+        </label>
+        <select
+          id="orderType"
+          value={orderType}
+          onChange={(e) => setOrderType(e.target.value)}
+          className="w-full p-2 mt-1 bg-gray-900 border border-gray-700 rounded-md"
+        >
+          <option value="En mesa">En mesa</option>
+          <option value="Llevar">Llevar</option>
+          <option value="Mixto">Mixto</option>
+        </select>
       </div>
 
       <div>
