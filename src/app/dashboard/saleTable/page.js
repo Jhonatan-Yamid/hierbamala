@@ -1,7 +1,6 @@
 // components/DailySales.js
 "use client";
 import { useState, useEffect, useCallback } from "react";
-// *** MODIFICACIÓN: Añadimos FaTrashAlt ***
 import { FaCashRegister, FaEdit, FaEye, FaTrashAlt } from "react-icons/fa";
 import { IoClose } from "react-icons/io5";
 import Link from "next/link";
@@ -25,9 +24,9 @@ function DailySales() {
         const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 15); // 3:00 p.m.
         const endOfToday = new Date(startOfToday);
         endOfToday.setDate(endOfToday.getDate() + 1);
-        endOfToday.setHours(11, 0, 0, 0); // 4:00 a.m. del siguiente día
+        endOfToday.setHours(6, 0, 0, 0); // 4:00 a.m. del siguiente día
 
-        if (now < endOfToday && now.getHours() < 11) {
+        if (now < endOfToday && now.getHours() < 6) {
             startOfToday.setDate(startOfToday.getDate() - 1);
             endOfToday.setDate(endOfToday.getDate() - 1);
         }
@@ -106,14 +105,13 @@ function DailySales() {
         }
     };
 
-    // *** NUEVA FUNCIÓN: handleDeleteSale ***
     const handleDeleteSale = async (saleId) => {
         if (!window.confirm("¿Estás seguro de que quieres eliminar esta venta? Esta acción es irreversible.")) {
-            return; // Si el usuario cancela, no hacemos nada
+            return;
         }
 
         try {
-            const res = await fetch(`/api/sale?id=${saleId}`, { // Llamamos a tu ruta DELETE con el ID en los query params
+            const res = await fetch(`/api/sale?id=${saleId}`, {
                 method: "DELETE",
             });
 
@@ -123,7 +121,7 @@ function DailySales() {
             }
 
             alert("Venta eliminada exitosamente.");
-            fetchSalesData(); // Volvemos a cargar las ventas para actualizar la lista
+            fetchSalesData();
         } catch (error) {
             console.error("Error al eliminar la venta:", error);
             alert(`No se pudo eliminar la venta: ${error.message}`);
@@ -146,12 +144,22 @@ function DailySales() {
                 <p className="text-slate-200">No hay ventas registradas</p>
             ) : (
                 salesList.map((sale) => (
-                    <div key={sale.id} className="flex items-center mb-4 cursor-pointer">
-                        <div className="flex items-center justify-center w-14 h-14 bg-gray-800 rounded-md mr-4">
+                    <div key={sale.id} className="flex items-start mb-4 cursor-pointer p-4 bg-gray-800 rounded-lg shadow-md"> {/* Flex row para mantener ícono a la izquierda */}
+                        {/* Contenedor del ícono */}
+                        <div className="flex items-center justify-center w-14 h-14 bg-gray-700 rounded-md mr-4 flex-shrink-0 mt-1"> {/* mt-1 para alinear con el texto */}
                             <FaCashRegister className="text-white" size={20} />
                         </div>
+
+                        {/* Contenido principal de la venta (Mesa, Venta, Productos, Estado, Total, Botones) */}
                         <div className="flex flex-col sm:flex-row justify-between w-full">
-                            <div>
+                            {/* Sección izquierda: Detalles de la venta y botón de estado */}
+                            <div className="flex flex-col items-start flex-grow">
+                                {/* *** MODIFICACIÓN CLAVE: Número de Mesa resaltado y combinado con el ícono *** */}
+                                <h3 className="text-green-400 text-4xl font-extrabold leading-none mb-2">
+                                    Mesa: {sale.table}
+                                </h3>
+                                {/* *** FIN MODIFICACIÓN CLAVE *** */}
+
                                 <h2 className="text-slate-200 text-xl font-semibold">
                                     Venta - {new Date(sale.updatedAt).toLocaleDateString("es-CL")} / {new Date(sale.updatedAt).toLocaleTimeString("es-CL", { hour: '2-digit', minute: '2-digit' })}
                                 </h2>
@@ -159,7 +167,7 @@ function DailySales() {
                                     Productos: {sale.products?.length || 0}
                                 </span>
                                 <div className="text-slate-300 text-sm">
-                                    Mesa: {sale.table} | Estado: {sale.status}
+                                    Estado: {sale.status}
                                 </div>
                                 {["en proceso", "en mesa"].includes(sale.status) && (
                                     <button
@@ -170,39 +178,43 @@ function DailySales() {
                                     </button>
                                 )}
                             </div>
-                            <div className="flex items-center mt-2 sm:mt-0 sm:ml-4">
-                                <span className="text-slate-200 text-lg font-semibold mr-2">Total:</span>
-                                <span className="text-slate-300 text-lg font-semibold">
-                                    {new Intl.NumberFormat("es-CL", {
-                                        style: "currency",
-                                        currency: "CLP",
-                                    }).format(sale.totalAmount)}
-                                </span>
-                                <Link href={`/dashboard/sales/${sale.id}`}>
-                                    <button className="ml-4 text-gray-600 hover:text-gray-200 text-3xl">
-                                        <FaEdit />
+
+                            {/* Sección derecha: Total y botones de acción */}
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center mt-4 sm:mt-0 sm:ml-4 flex-shrink-0">
+                                <div className="flex items-center mb-4 sm:mb-0 mr-4">
+                                    <span className="text-slate-200 text-lg font-semibold mr-2">Total:</span>
+                                    <span className="text-slate-300 text-lg font-semibold">
+                                        {new Intl.NumberFormat("es-CL", {
+                                            style: "currency",
+                                            currency: "CLP",
+                                        }).format(sale.totalAmount)}
+                                    </span>
+                                </div>
+                                <div className="flex justify-start sm:justify-end w-full sm:w-auto"> {/* Contenedor para los botones de acción */}
+                                    <Link href={`/dashboard/sales/${sale.id}`}>
+                                        <button className="ml-4 text-gray-600 hover:text-gray-200 text-3xl">
+                                            <FaEdit />
+                                        </button>
+                                    </Link>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handlePreview(sale);
+                                        }}
+                                        className="ml-4 text-gray-600 hover:text-gray-200 text-3xl"
+                                    >
+                                        <FaEye />
                                     </button>
-                                </Link>
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handlePreview(sale);
-                                    }}
-                                    className="ml-4 text-gray-600 hover:text-gray-200 text-3xl"
-                                >
-                                    <FaEye />
-                                </button>
-                                {/* *** NUEVO BOTÓN DE ELIMINAR *** */}
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation(); // Evita que se dispare el evento click del div padre
-                                        handleDeleteSale(sale.id);
-                                    }}
-                                    className="ml-4 text-gray-600 hover:text-gray-200 text-3xl" // Color rojo para acción de eliminar
-                                >
-                                    <FaTrashAlt />
-                                </button>
-                                {/* *** FIN DEL NUEVO BOTÓN *** */}
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDeleteSale(sale.id);
+                                        }}
+                                        className="ml-4 text-red-500 hover:text-red-300 text-3xl"
+                                    >
+                                        <FaTrashAlt />
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -212,7 +224,7 @@ function DailySales() {
     );
 
     return (
-        <div className="p-6">
+        <div className="p-6 bg-gray-950 min-h-screen text-slate-200">
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-slate-200 font-semibold text-3xl">Ventas</h1>
                 <Link href="/dashboard/sales">
