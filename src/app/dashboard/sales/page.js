@@ -1,7 +1,7 @@
 // components/SalesForm.jsx
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import useSalesFormLogic from "@/hooks/useSalesFormLogic";
 import ProductSearch from "@/components/ProductSearch";
 import ProductList from "@/components/ProductList";
@@ -9,6 +9,7 @@ import SaleInfoFields from "@/components/SaleInfoFields";
 import TicketPreviewModal from "@/components/TicketPreviewModal";
 
 const SalesForm = ({ saleId }) => {
+  const [shouldPrint, setShouldPrint] = useState(false);
   const {
     isLoading,
     isEditing,
@@ -50,6 +51,7 @@ const SalesForm = ({ saleId }) => {
       </div>
     );
   }
+  
 
   const handlePay = async () => {
     const saleData = {
@@ -79,8 +81,8 @@ const SalesForm = ({ saleId }) => {
       if (res.ok) {
         console.log("Venta guardada exitosamente.");
 
-        if (!isEditing) {
-          handlePrint();
+        if (shouldPrint) {
+          await handlePrint();
         }
         setShowPreview(true);
       } else {
@@ -175,6 +177,18 @@ const SalesForm = ({ saleId }) => {
       />
 
       {error && <div className="text-red-500 text-sm">{error}</div>}
+      <div className="flex items-center space-x-2">
+        <input
+          type="checkbox"
+          id="printOnSave"
+          checked={shouldPrint}
+          onChange={(e) => setShouldPrint(e.target.checked)}
+          className="w-4 h-4"
+        />
+        <label htmlFor="printOnSave" className="text-sm">
+          Imprimir al guardar
+        </label>
+      </div>
 
       <button
         type="button"

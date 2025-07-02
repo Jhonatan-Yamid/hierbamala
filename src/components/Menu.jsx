@@ -141,6 +141,13 @@ const Menu = ({ session }) => {
                 ) : (
                   <>
                     <Link
+                      href="/dashboard/saleTable"
+                      className="text-white"
+                      onClick={closeMenu}
+                    >
+                      Ventas
+                    </Link>
+                    <Link
                       href="/dashboard/IngredientInventory"
                       className="text-white"
                       onClick={closeMenu}

@@ -3,9 +3,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { FaCashRegister, FaEdit, FaEye, FaTrashAlt } from "react-icons/fa";
 import { IoClose } from "react-icons/io5";
+import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 
 function DailySales() {
+    const { data: session } = useSession();
     const [subTab, setSubTab] = useState("pendientes");
     const [sales, setSales] = useState([]);
     const [todaySales, setTodaySales] = useState([]);
@@ -131,15 +133,22 @@ function DailySales() {
     const renderSaleList = (salesList) => (
         <div className="flex flex-col gap-4 border-solid border rounded-md border-gray-600 p-5">
             <h1 className="text-slate-200 font-medium text-xl">Ventas Registradas</h1>
-            {activeTab === "today" && (
-                <div className="text-green-300 font-bold text-lg">
-                    Total de hoy:{" "}
-                    {new Intl.NumberFormat("es-CL", {
-                        style: "currency",
-                        currency: "CLP",
-                    }).format(totalToday)}
-                </div>
+            {session?.user?.image === 1 ? (
+                <>
+                    {activeTab === "today" && (
+                        <div className="text-green-300 font-bold text-lg">
+                            Total de hoy:{" "}
+                            {new Intl.NumberFormat("es-CL", {
+                                style: "currency",
+                                currency: "CLP",
+                            }).format(totalToday)}
+                        </div>
+                    )}
+                </>
+            ) : (
+                <></>
             )}
+
             {salesList.length === 0 ? (
                 <p className="text-slate-200">No hay ventas registradas</p>
             ) : (
@@ -205,15 +214,19 @@ function DailySales() {
                                     >
                                         <FaEye />
                                     </button>
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleDeleteSale(sale.id);
-                                        }}
-                                        className="ml-4 text-red-500 hover:text-red-300 text-3xl"
-                                    >
-                                        <FaTrashAlt />
-                                    </button>
+                                    {session?.user?.image === 1 ? (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDeleteSale(sale.id);
+                                            }}
+                                            className="ml-4 text-red-500 hover:text-red-300 text-3xl"
+                                        >
+                                            <FaTrashAlt />
+                                        </button>
+                                    ) : (
+                                        <></>
+                                    )}
                                 </div>
                             </div>
                         </div>

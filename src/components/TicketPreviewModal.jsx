@@ -2,8 +2,8 @@
 import React from "react";
 
 const TicketPreviewModal = ({ formatTicket, onPrint, onShare, onClose }) => (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-    <div className="bg-gray-900 text-slate-200 p-4 rounded-md w-96">
+  <div className="fixed inset-0 overflow-auto bg-black bg-opacity-50 flex items-center justify-center">
+    <div className="bg-gray-900 max-h-[90vh] overflow-y-auto text-slate-200 p-4 rounded-md w-96">
       <h3 className="text-lg font-bold mb-2">Vista Previa del Ticket</h3>
       <pre className="bg-gray-800 p-2 rounded-md whitespace-pre-wrap">
         {formatTicket()}

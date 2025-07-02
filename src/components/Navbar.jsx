@@ -82,12 +82,16 @@ async function Navbar() {
               </>
             ) : (
               <>
+              <li>
+                  <Link href="/dashboard/saleTable">Ventas</Link>
+                </li>
                 <li>
                   <Link href="/dashboard/IngredientInventory">Inventario</Link>
                 </li>
                 <li>
                   <Link href="/dashboard/openChecklist">Apertura</Link>
                 </li>
+                
                 <li>
                   <Link
                     href="/api/auth/signout"
