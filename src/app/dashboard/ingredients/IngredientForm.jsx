@@ -10,7 +10,7 @@ function IngredientForm({ ingredient, onSubmit, isNewIngredient  }) {
         typeUnity: "",
       }
     : {
-        id:ingredient.id,
+        id:ingredient?.id || null,
         name: ingredient.name,
         description: ingredient.description,
         quantity: ingredient.quantity,

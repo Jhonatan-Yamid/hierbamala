@@ -34,6 +34,40 @@ export async function PUT(request) {
   try {
     const data = await request.json();
 
+    // 🔍 Si viene el parámetro `actualizar`, es una edición individual
+    if (data.actualizar === true) {
+      const {
+        id,
+        name,
+        description,
+        quantity,
+        price,
+        typeUnity,
+      } = data;
+
+      if (!id || typeof id !== "number") {
+        return NextResponse.json(
+          { message: "ID inválido para actualización." },
+          { status: 400 }
+        );
+      }
+
+      const updatedIngredient = await db.ingredient.update({
+        where: { id },
+        data: {
+          name,
+          description,
+          quantity: quantity === "insuficiente" ? null : parseFloat(quantity),
+          price: parseFloat(price),
+          typeUnity,
+          updatedAt: new Date(),
+        },
+      });
+
+      return NextResponse.json(updatedIngredient, { status: 200 });
+    }
+
+    // 🧪 Si NO viene `actualizar`, se asume que es un lote
     if (!Array.isArray(data)) {
       return NextResponse.json(
         { message: "Datos inválidos, se esperaba un arreglo." },
@@ -42,7 +76,10 @@ export async function PUT(request) {
     }
 
     for (const { id, quantity } of data) {
-      if (typeof id !== "number" || (typeof quantity !== "string" && typeof quantity !== "number" && quantity !== null)) {
+      if (
+        typeof id !== "number" ||
+        (typeof quantity !== "string" && typeof quantity !== "number" && quantity !== null)
+      ) {
         return NextResponse.json(
           { message: "Todos los elementos deben tener un 'id' y 'quantity' válidos." },
           { status: 400 }
@@ -71,6 +108,7 @@ export async function PUT(request) {
     return NextResponse.json({ message: error.message }, { status: 500 });
   }
 }
+
 
 export async function DELETE(request) {
   try {

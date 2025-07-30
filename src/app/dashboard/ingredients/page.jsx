@@ -1,4 +1,4 @@
-'use client';
+"use client";
 import IngredientForm from "./IngredientForm";
 import { useState, useEffect } from "react";
 import IngredientItem from "./IngredientItem";
@@ -32,7 +32,9 @@ function IngredientTable() {
       });
 
       if (response.ok) {
-        setIngredients(ingredients.filter((ingredient) => ingredient.id !== id));
+        setIngredients(
+          ingredients.filter((ingredient) => ingredient.id !== id)
+        );
       } else {
         console.error("Error al eliminar el ingredient:", response.statusText);
       }
@@ -43,6 +45,7 @@ function IngredientTable() {
 
   const handleEdit = (ingredient) => {
     setEditingIngredient(ingredient);
+    setIsNewIngredient(false); // <-- Asegura que NO esté en modo nuevo
   };
 
   const handleNewIngredient = () => {
@@ -57,14 +60,23 @@ function IngredientTable() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(editedIngredient),
+        body: JSON.stringify({ ...editedIngredient, actualizar: true }), // Indicamos el tipo de operación
       });
+
       if (response.ok) {
+        const updatedIngredient = await response.json();
+
+        // 1. Actualiza la lista
         const updatedIngredients = ingredients.map((ingredient) =>
-          ingredient.id === editedIngredient.id ? editedIngredient : ingredient
+          ingredient.id === updatedIngredient.id
+            ? updatedIngredient
+            : ingredient
         );
         setIngredients(updatedIngredients);
-        setEditingIngredient(null);
+
+        // 2. Mantiene el formulario con los datos actualizados
+        setEditingIngredient(updatedIngredient);
+        setIsNewIngredient(false);
       } else {
         console.error("Error al editar el ingredient:", response.statusText);
       }
@@ -86,6 +98,7 @@ function IngredientTable() {
         const createdIngredient = await response.json();
         setIngredients([...ingredients, createdIngredient]); // Agregar el nuevo ingredient a la lista
         setIsNewIngredient(false); // Salir del modo de creación de nuevo ingredient
+        setEditingIngredient(null);
       } else {
         console.error("Error al crear el ingredient:", response.statusText);
       }
@@ -102,12 +115,25 @@ function IngredientTable() {
           className="bg-gray-800 text-gray-200 flex items-center rounded-md px-4 py-1 hover:bg-gray-600 hover:text-white"
           onClick={handleNewIngredient}
         >
-          Nuevo
-          +
+          Nuevo +
         </button>
       </div>
+      {(editingIngredient !== null || isNewIngredient) && (
+        <IngredientForm
+          key={editingIngredient?.id || "new"} // esto fuerza un reinicio cada vez que cambias de modo
+          ingredient={editingIngredient || null}
+          onSubmit={
+            isNewIngredient
+              ? handleNewIngredientFormSubmit
+              : handleEditFormSubmit
+          }
+          isNewIngredient={isNewIngredient}
+        />
+      )}
       <div className="flex flex-col gap-4 border-solid border rounded-md border-gray-600 p-5">
-      <h1 className="text-slate-200 font-medium text-xl">Listado Actualizado</h1>
+        <h1 className="text-slate-200 font-medium text-xl">
+          Listado Actualizado
+        </h1>
         {ingredients.map((ingredient) => (
           <IngredientItem
             key={ingredient.id}
@@ -117,16 +143,6 @@ function IngredientTable() {
           />
         ))}
       </div>
-
-      {editingIngredient !== null || isNewIngredient ? (
-        <IngredientForm
-          ingredient={editingIngredient || null}
-          onSubmit={
-            isNewIngredient ? handleNewIngredientFormSubmit : handleEditFormSubmit
-          }
-          isNewIngredient={isNewIngredient}
-        />
-      ) : null}
     </div>
   );
 }
