@@ -40,7 +40,7 @@ export async function POST(request) {
             totalAmount,
             products,
             game,
-            orderType, // Mínima modificación: Desestructurar orderType
+            orderType,
         } = data;
 
         if (!products || products.length === 0) {
@@ -56,14 +56,14 @@ export async function POST(request) {
             data: {
                 totalAmount,
                 status: saleStatus || 'en proceso',
-                table: String(tableNumber), // Asegurarse de que sea string para consistencia con el schema
+                table: String(tableNumber),
                 generalObservation,
                 gameId,
-                orderType, // Mínima modificación: Añadir orderType a la data de creación
+                orderType,
             },
         });
 
-        const productPromises = products.map(async (product) => {
+        for (const product of products) {
             const saleProduct = await db.saleProduct.create({
                 data: {
                     id: nanoid(),
@@ -74,24 +74,34 @@ export async function POST(request) {
                 },
             });
 
-            const additionPromises = product.additions.map((addition) => {
+            await Promise.all(product.additions.map((addition) => {
                 return db.saleProductAddition.create({
                     data: {
                         saleProductId: saleProduct.id,
                         name: addition.name,
                         price: addition.price,
-                        additionId: addition.id, // Asumiendo que `addition.id` es el `additionId` del producto/adición original
+                        additionId: addition.id,
                     },
                 });
+            }));
+
+            // Descontar ingredientes del inventario
+            const ingredients = await db.productIngredient.findMany({
+                where: { productId: product.id },
             });
 
-            await Promise.all(additionPromises);
-            return saleProduct;
-        });
+            for (const ing of ingredients) {
+                await db.ingredient.update({
+                    where: { id: ing.ingredientId },
+                    data: {
+                        quantity: {
+                            decrement: ing.quantity * product.quantity,
+                        },
+                    },
+                });
+            }
+        }
 
-        await Promise.all(productPromises);
-
-        // Fetch the final sale including related data for the response
         const finalSale = await db.sale.findUnique({
             where: { id: newSale.id },
             include: {
@@ -99,7 +109,7 @@ export async function POST(request) {
                 products: {
                     include: {
                         product: true,
-                        additions: true, // Incluir adiciones para la respuesta
+                        additions: true,
                     }
                 }
             }
@@ -116,7 +126,6 @@ export async function POST(request) {
     }
 }
 
-// Función para eliminar ventas (sin cambios)
 export async function DELETE(request) {
     try {
         const { searchParams } = new URL(request.url);
@@ -131,6 +140,30 @@ export async function DELETE(request) {
         }
 
         await db.$transaction(async (prisma) => {
+            const saleProducts = await prisma.saleProduct.findMany({
+                where: { saleId: saleIdInt },
+                include: {
+                    product: true,
+                }
+            });
+
+            for (const sp of saleProducts) {
+                const ingredients = await prisma.productIngredient.findMany({
+                    where: { productId: sp.productId },
+                });
+
+                for (const ing of ingredients) {
+                    await prisma.ingredient.update({
+                        where: { id: ing.ingredientId },
+                        data: {
+                            quantity: {
+                                increment: ing.quantity * sp.quantity,
+                            },
+                        },
+                    });
+                }
+            }
+
             await prisma.saleProductAddition.deleteMany({
                 where: {
                     saleProduct: {

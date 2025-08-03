@@ -23,7 +23,7 @@ function DailySales() {
     const getOperationalDayRange = () => {
         const now = new Date();
 
-        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 15); // 3:00 p.m.
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 7); // 3:00 p.m.
         const endOfToday = new Date(startOfToday);
         endOfToday.setDate(endOfToday.getDate() + 1);
         endOfToday.setHours(6, 0, 0, 0); // 4:00 a.m. del siguiente día

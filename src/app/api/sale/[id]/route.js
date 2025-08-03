@@ -61,7 +61,6 @@ export async function GET(request, { params }) {
 export async function PUT(request, { params }) {
   try {
     const data = await request.json();
-    // 1. Desestructurar los datos del payload de la solicitud
     const {
       totalAmount,
       saleStatus,
@@ -69,7 +68,7 @@ export async function PUT(request, { params }) {
       generalObservation,
       products,
       game,
-      orderType // <--- MODIFICACIÓN MÍNIMA 1: Desestructurar orderType
+      orderType
     } = data;
 
     const saleIdInt = parseInt(params.id);
@@ -77,14 +76,35 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ message: "ID de venta inválido" }, { status: 400 });
     }
 
-    // *** MODIFICACIÓN PARA JUEGOS: Convertir 'game' a gameId (número o null) ***
     const gameId = game ? parseInt(game, 10) : null;
     if (game && isNaN(gameId)) {
       return NextResponse.json({ message: 'ID de juego inválido' }, { status: 400 });
     }
 
     await db.$transaction(async (prisma) => {
-      // Eliminar relaciones de muchos a muchos primero: SaleProductAddition
+      // 👉 1. Revertir inventario de ingredientes usados anteriormente
+      const oldProducts = await prisma.saleProduct.findMany({
+        where: { saleId: saleIdInt },
+      });
+
+      for (const oldProduct of oldProducts) {
+        const ingredients = await prisma.productIngredient.findMany({
+          where: { productId: oldProduct.productId },
+        });
+
+        for (const ing of ingredients) {
+          await prisma.ingredient.update({
+            where: { id: ing.ingredientId },
+            data: {
+              quantity: {
+                increment: ing.quantity * oldProduct.quantity,
+              },
+            },
+          });
+        }
+      }
+
+      // 👉 2. Eliminar relaciones anteriores
       await prisma.saleProductAddition.deleteMany({
         where: {
           saleProduct: {
@@ -93,44 +113,38 @@ export async function PUT(request, { params }) {
         }
       });
 
-      // Luego eliminar los SaleProduct asociados a la venta
       await prisma.saleProduct.deleteMany({
         where: {
           saleId: saleIdInt
         }
       });
 
-      // *** MODIFICACIÓN IMPORTANTE PARA JUEGOS Y LÓGICA DE ACTUALIZACIÓN ***
-      // En lugar de ELIMINAR y CREAR la venta principal, la VAMOS A ACTUALIZAR.
-      // Esto mantiene el mismo ID de venta.
+      // 👉 3. Actualizar venta principal
       const updatedSale = await prisma.sale.update({
-        where: { id: saleIdInt }, // Actualizamos la venta con el ID existente
+        where: { id: saleIdInt },
         data: {
-          totalAmount: totalAmount,
+          totalAmount,
           status: saleStatus || 'en proceso',
           table: tableNumber,
-          generalObservation: generalObservation,
-          // *** MODIFICACIÓN PARA JUEGOS: Añadir gameId a la data de actualización ***
-          gameId: gameId,
-          orderType: orderType, // <--- MODIFICACIÓN MÍNIMA 2: Añadir orderType a la data de actualización
+          generalObservation,
+          gameId,
+          orderType,
         },
       });
 
-      // Procesar y crear los nuevos productos de la venta
-      // Usamos el ID de la venta existente (updatedSale.id)
-      const productPromises = products.map(async (product) => {
+      // 👉 4. Crear productos nuevos y descontar ingredientes
+      for (const product of products) {
         const saleProduct = await prisma.saleProduct.create({
           data: {
             id: nanoid(),
-            saleId: updatedSale.id, // Usa el ID de la venta que fue actualizada
+            saleId: updatedSale.id,
             productId: product.id,
             quantity: product.quantity,
             observation: product.observation || '',
           },
         });
 
-        // Procesar adiciones si existen
-        if (product.additions && product.additions.length > 0) {
+        if (product.additions?.length > 0) {
           await Promise.all(
             product.additions.map((addition) => {
               return prisma.saleProductAddition.create({
@@ -143,20 +157,29 @@ export async function PUT(request, { params }) {
             })
           );
         }
-        return saleProduct;
-      });
 
-      await Promise.all(productPromises);
+        // 👇 Descontar ingredientes del inventario
+        const ingredients = await prisma.productIngredient.findMany({
+          where: { productId: product.id },
+        });
 
-      // Si la transacción se completó sin errores, retornamos el resultado de la actualización
-      return { message: 'Venta actualizada exitosamente', updatedSaleId: updatedSale.id };
+        for (const ing of ingredients) {
+          await prisma.ingredient.update({
+            where: { id: ing.ingredientId },
+            data: {
+              quantity: {
+                decrement: ing.quantity * product.quantity,
+              },
+            },
+          });
+        }
+      }
     });
 
     return NextResponse.json({ message: 'Venta actualizada exitosamente' }, { status: 200 });
 
   } catch (error) {
     console.error('Error al actualizar la venta:', error);
-    // *** MODIFICACIÓN PARA JUEGOS: Manejo de error si el gameId no existe ***
     if (error.code === 'P2003' && error.meta?.field_name === 'gameId') {
       return NextResponse.json({ message: 'El ID de juego proporcionado no existe.' }, { status: 400 });
     }
@@ -164,6 +187,7 @@ export async function PUT(request, { params }) {
     return NextResponse.json({ message: errorMessage }, { status: 500 });
   }
 }
+
 
 // Este 'handler' es de Next.js Pages Router y está mezclado con la estructura de App Router.
 // Si estás usando Next.js App Router (rutas con funciones GET/POST/PUT exportadas),
