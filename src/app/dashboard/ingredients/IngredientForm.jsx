@@ -1,7 +1,7 @@
 import { useState } from "react";
 
-function IngredientForm({ ingredient, onSubmit, isNewIngredient  }) {
-    const initialFormData = isNewIngredient
+function IngredientForm({ ingredient, onSubmit, isNewIngredient }) {
+  const initialFormData = isNewIngredient
     ? {
         name: "",
         description: "",
@@ -10,7 +10,7 @@ function IngredientForm({ ingredient, onSubmit, isNewIngredient  }) {
         typeUnity: "",
       }
     : {
-        id:ingredient?.id || null,
+        id: ingredient?.id || null,
         name: ingredient.name,
         description: ingredient.description,
         quantity: ingredient.quantity,
@@ -34,76 +34,113 @@ function IngredientForm({ ingredient, onSubmit, isNewIngredient  }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="p-4 bg-slate-700 text-slate-200">
-      <h2 className="text-2xl font-bold mb-4">{isNewIngredient ? "New Ingredient" : "Edit Ingredient"}</h2>
-      <div className="mb-4">
-        <label htmlFor="name" className="block mb-1">
-          Name:
-        </label>
-        <input
-          type="text"
-          id="name"
-          name="name"
-          value={formData.name}
-          onChange={handleChange}
-          className="w-full p-2 rounded bg-slate-800 text-slate-200"
-        />
+    <form
+      onSubmit={handleSubmit}
+      className="w-full mx-auto p-5 shadow-lg text-white space-y-6 rounded-lg border border-white mb-6"
+    >
+      <h2 className="text-xl font-semibold text-slate-200 mb-4">
+        {isNewIngredient ? "Nuevo Ingrediente" : "Editar Ingrediente"}
+      </h2>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label
+            htmlFor="name"
+            className="block mb-1 text-sm font-medium text-gray-300"
+          >
+            Nombre
+          </label>
+          <input
+            type="text"
+            id="name"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+            className="w-full p-3 rounded-lg bg-gray-800 text-white outline-none"
+            required
+          />
+        </div>
+        <div >
+          <label
+            htmlFor="typeUnity"
+            className="block mb-1 text-sm font-medium text-gray-300"
+          >
+            Unidad de medida
+          </label>
+          <input
+            type="text"
+            id="typeUnity"
+            name="typeUnity"
+            value={formData.typeUnity}
+            onChange={handleChange}
+            className="w-full p-3 rounded-lg bg-gray-800 text-white outline-none"
+            required
+          />
+        </div>
+
+        <div className="md:col-span-2">
+          <label
+            htmlFor="description"
+            className="block mb-1 text-sm font-medium text-gray-300"
+          >
+            Descripción
+          </label>
+          <input
+            type="text"
+            id="description"
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            className="w-full p-3 rounded-lg bg-gray-800 text-white outline-none"
+          />
+        </div>
+
+        <div>
+          <label
+            htmlFor="quantity"
+            className="block mb-1 text-sm font-medium text-gray-300"
+          >
+            Cantidad disponible
+          </label>
+          <input
+            type="number"
+            id="quantity"
+            name="quantity"
+            value={formData.quantity}
+            onChange={handleChange}
+            className="w-full p-3 rounded-lg bg-gray-800 text-white outline-none"
+            required
+          />
+        </div>
+
+        <div>
+          <label
+            htmlFor="price"
+            className="block mb-1 text-sm font-medium text-gray-300"
+          >
+            Precio
+          </label>
+          <input
+            type="number"
+            id="price"
+            name="price"
+            value={formData.price}
+            onChange={handleChange}
+            className="w-full p-3 rounded-lg bg-gray-800 text-white outline-none"
+            step="0.01"
+            required
+          />
+        </div>
       </div>
-      <div className="mb-4">
-        <label htmlFor="description" className="block mb-1">
-          Description:
-        </label>
-        <input
-          type="text"
-          id="description"
-          name="description"
-          value={formData.description}
-          onChange={handleChange}
-          className="w-full p-2 rounded bg-slate-800 text-slate-200"
-        />
+
+      <div className="flex justify-center pt-4" >
+        <button
+          type="submit"
+          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg font-semibold transition w-full"
+        >
+          Guardar Ingrediente
+        </button>
       </div>
-      <div className="mb-4">
-        <label htmlFor="quantity" className="block mb-1">
-          Quantity:
-        </label>
-        <input
-          type="number"
-          id="quantity"
-          name="quantity"
-          value={formData.quantity}
-          onChange={handleChange}
-          className="w-full p-2 rounded bg-slate-800 text-slate-200"
-        />
-      </div>
-      <div className="mb-4">
-        <label htmlFor="price" className="block mb-1">
-          Price:
-        </label>
-        <input
-          type="number"
-          id="price"
-          name="price"
-          value={formData.price}
-          onChange={handleChange}
-          className="w-full p-2 rounded bg-slate-800 text-slate-200"
-        />
-      </div>
-      <div className="mb-4">
-        <label htmlFor="typeUnity" className="block mb-1">
-          Type Unity:
-        </label>
-        <input
-          type="text"
-          id="typeUnity"
-          name="typeUnity"
-          value={formData.typeUnity}
-          onChange={handleChange}
-          className="w-full p-2 rounded bg-slate-800 text-slate-200"
-        />
-      </div>
-      <button type="submit" className="bg-blue-500 text-white p-2 rounded">
-        Save
-      </button>
     </form>
   );
 }

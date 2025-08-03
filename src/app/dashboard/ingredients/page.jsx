@@ -1,49 +1,37 @@
 "use client";
-
 import IngredientForm from "./IngredientForm";
 import { useState, useEffect } from "react";
 import IngredientItem from "./IngredientItem";
 
 function IngredientTable() {
   const [ingredients, setIngredients] = useState([]);
-  const [filteredIngredients, setFilteredIngredients] = useState([]);
-  const [searchTerm, setSearchTerm] = useState("");
   const [editingIngredient, setEditingIngredient] = useState(null);
   const [isNewIngredient, setIsNewIngredient] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  // Obtener ingredientes
   useEffect(() => {
     fetch("/api/ingredient")
       .then((res) => res.json())
       .then((data) => {
         setIngredients(data);
-        setFilteredIngredients(data); // Para mostrar inicialmente todos
       })
       .catch((error) => {
-        console.error("Error al obtener los datos del servidor:", error);
+        console.error("Error al obtener los ingredientes:", error);
       });
   }, []);
-
-  // Filtrar ingredientes según el término de búsqueda
-  useEffect(() => {
-    const lowerTerm = searchTerm.toLowerCase();
-    const filtered = ingredients.filter((ingredient) =>
-      ingredient.name.toLowerCase().includes(lowerTerm)
-    );
-    setFilteredIngredients(filtered);
-  }, [searchTerm, ingredients]);
 
   const handleDelete = async (id) => {
     try {
       const response = await fetch("/api/ingredient", {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ id }),
       });
 
       if (response.ok) {
-        const updated = ingredients.filter((ingredient) => ingredient.id !== id);
-        setIngredients(updated);
+        setIngredients((prev) => prev.filter((ing) => ing.id !== id));
       } else {
         console.error("Error al eliminar:", response.statusText);
       }
@@ -66,17 +54,18 @@ function IngredientTable() {
     try {
       const response = await fetch("/api/ingredient", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ ...editedIngredient, actualizar: true }),
       });
 
       if (response.ok) {
-        const updatedIngredient = await response.json();
-        const updatedIngredients = ingredients.map((ingredient) =>
-          ingredient.id === updatedIngredient.id ? updatedIngredient : ingredient
+        const updated = await response.json();
+        setIngredients((prev) =>
+          prev.map((ing) => (ing.id === updated.id ? updated : ing))
         );
-        setIngredients(updatedIngredients);
-        setEditingIngredient(updatedIngredient);
+        setEditingIngredient(updated);
         setIsNewIngredient(false);
       } else {
         console.error("Error al editar:", response.statusText);
@@ -90,15 +79,16 @@ function IngredientTable() {
     try {
       const response = await fetch("/api/ingredient", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(newIngredient),
       });
-
       if (response.ok) {
-        const createdIngredient = await response.json();
-        setIngredients([...ingredients, createdIngredient]);
-        setIsNewIngredient(false);
+        const created = await response.json();
+        setIngredients((prev) => [...prev, created]);
         setEditingIngredient(null);
+        setIsNewIngredient(false);
       } else {
         console.error("Error al crear:", response.statusText);
       }
@@ -107,34 +97,26 @@ function IngredientTable() {
     }
   };
 
+  const filteredIngredients = ingredients.filter((ingredient) =>
+    ingredient.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
-    <div className="p-6">
+    <div className="p-6 text-white">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-slate-200 font-semibold text-3xl">Ingredientes</h1>
+        <h1 className="text-3xl font-bold">Ingredientes</h1>
         <button
-          className="bg-gray-800 text-gray-200 flex items-center rounded-md px-4 py-1 hover:bg-gray-600 hover:text-white"
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
           onClick={handleNewIngredient}
         >
-          Nuevo +
+          Nuevo Ingrediente
         </button>
       </div>
 
-      {/* 🔍 Input de búsqueda */}
-      <div className="mb-6">
-        <input
-          type="text"
-          placeholder="Buscar ingrediente..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-4 py-2 rounded-md border border-gray-400 text-gray-900"
-        />
-      </div>
-
-      {/* Formulario dinámico */}
-      {(editingIngredient !== null || isNewIngredient) && (
+      {(editingIngredient || isNewIngredient) && (
         <IngredientForm
           key={editingIngredient?.id || "new"}
-          ingredient={editingIngredient || null}
+          ingredient={editingIngredient}
           onSubmit={
             isNewIngredient
               ? handleNewIngredientFormSubmit
@@ -144,9 +126,17 @@ function IngredientTable() {
         />
       )}
 
-      {/* Listado filtrado */}
-      <div className="flex flex-col gap-4 border-solid border rounded-md border-gray-600 p-5">
-        <h1 className="text-slate-200 font-medium text-xl">Listado Actualizado</h1>
+      <div className="mb-4">
+        <input
+          type="text"
+          placeholder="Buscar ingrediente..."
+          className="w-full px-4 py-2 border border-gray-500 rounded bg-gray-900 text-white placeholder-gray-400"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </div>
+
+      <div className="space-y-4">
         {filteredIngredients.map((ingredient) => (
           <IngredientItem
             key={ingredient.id}
@@ -155,6 +145,9 @@ function IngredientTable() {
             onDelete={handleDelete}
           />
         ))}
+        {filteredIngredients.length === 0 && (
+          <p className="text-gray-400">No se encontraron ingredientes.</p>
+        )}
       </div>
     </div>
   );

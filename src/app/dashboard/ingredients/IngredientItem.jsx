@@ -1,43 +1,44 @@
-import { FaUtensils } from "react-icons/fa"; // Asegúrate de que la ruta sea correcta
+import { FaUtensils } from "react-icons/fa";
 
 const IngredientItem = ({ ingredient, onEdit, onDelete }) => {
   return (
-    <div className="relative flex p-4 rounded-lg">
-      {ingredient.image ? (
-        <img
-          src={ingredient.image}
-          alt={ingredient.name}
-          className="w-14 h-14 rounded-full mr-4" // Ajusta el tamaño según necesites
-        />
-      ) : (
-        <div className="flex items-center justify-center w-14 h-14 bg-gray-800 rounded-md mr-4">
-          <FaUtensils className="text-white" size={20} />{" "}
-          {/* Icono de comida */}
-        </div>
-      )}
-      <div className="flex flex-col justify-between flex-1">
-        <h2
-          className="text-slate-200 cursor-pointer text-xl font-semibold"
-          onClick={() => onEdit(ingredient)} // Al hacer clic en el título, se editará el ingrediente
-        >
-          {ingredient.name}
-        </h2>
-        <div className="flex justify-left text-slate-300 text-sm">
-          <span className="font-light mr-3">{ingredient.quantity}</span>
-          <span className="font-semibold">
-            {new Intl.NumberFormat("es-CL", {
-              style: "currency",
-              currency: "CLP",
-            }).format(ingredient.price)}
-          </span>
+    <div className="bg-gray-900 rounded-xl shadow-md p-4 flex items-center justify-between hover:shadow-lg transition">
+      {/* Imagen o ícono */}
+      <div className="flex items-center space-x-4">
+        {ingredient.image ? (
+          <img
+            src={ingredient.image}
+            alt={ingredient.name}
+            className="w-16 h-16 rounded-full object-cover"
+          />
+        ) : (
+          <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center">
+            <FaUtensils className="text-white text-xl" />
+          </div>
+        )}
+
+        {/* Detalles */}
+        <div className="text-left">
+          <h3
+            className="text-lg font-bold text-white cursor-pointer hover:underline"
+            onClick={() => onEdit(ingredient)}
+          >
+            {ingredient.name}
+          </h3>
+          <p className="text-gray-400 text-sm">
+            {ingredient.description} ·{" "}
+            
+          </p>
+          <p className="text-sm mt-1 font-medium text-green-300">{(ingredient.quantity !== null) ? ingredient.quantity+" "+ingredient.typeUnity : "Insuficiente"}</p>
         </div>
       </div>
-      {/* Botón de eliminar en la esquina superior derecha */}
+
+      {/* Botón eliminar */}
       <button
-        className="absolute top-2 right-2 text-gray-600 hover:text-gray-200 text-3xl"
         onClick={() => onDelete(ingredient.id)}
+        className="text-gray-400 hover:text-red-400 text-2xl font-bold transition"
       >
-        &times; {/* Símbolo "X" para eliminar */}
+        &times;
       </button>
     </div>
   );
