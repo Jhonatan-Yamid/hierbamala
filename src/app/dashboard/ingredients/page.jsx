@@ -1,87 +1,88 @@
 "use client";
+
 import IngredientForm from "./IngredientForm";
 import { useState, useEffect } from "react";
 import IngredientItem from "./IngredientItem";
-// import { PlusIcon } from "@heroicons/react/outline"; // Asegúrate de tener este paquete
 
 function IngredientTable() {
   const [ingredients, setIngredients] = useState([]);
+  const [filteredIngredients, setFilteredIngredients] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [editingIngredient, setEditingIngredient] = useState(null);
   const [isNewIngredient, setIsNewIngredient] = useState(false);
 
+  // Obtener ingredientes
   useEffect(() => {
     fetch("/api/ingredient")
       .then((res) => res.json())
       .then((data) => {
-        console.log("Datos recibidos del servidor:", data);
         setIngredients(data);
+        setFilteredIngredients(data); // Para mostrar inicialmente todos
       })
       .catch((error) => {
         console.error("Error al obtener los datos del servidor:", error);
       });
   }, []);
 
+  // Filtrar ingredientes según el término de búsqueda
+  useEffect(() => {
+    const lowerTerm = searchTerm.toLowerCase();
+    const filtered = ingredients.filter((ingredient) =>
+      ingredient.name.toLowerCase().includes(lowerTerm)
+    );
+    setFilteredIngredients(filtered);
+  }, [searchTerm, ingredients]);
+
   const handleDelete = async (id) => {
     try {
       const response = await fetch("/api/ingredient", {
         method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id }),
       });
 
       if (response.ok) {
-        setIngredients(
-          ingredients.filter((ingredient) => ingredient.id !== id)
-        );
+        const updated = ingredients.filter((ingredient) => ingredient.id !== id);
+        setIngredients(updated);
       } else {
-        console.error("Error al eliminar el ingredient:", response.statusText);
+        console.error("Error al eliminar:", response.statusText);
       }
     } catch (error) {
-      console.error("Error al eliminar el ingredient:", error.message);
+      console.error("Error al eliminar:", error.message);
     }
   };
 
   const handleEdit = (ingredient) => {
     setEditingIngredient(ingredient);
-    setIsNewIngredient(false); // <-- Asegura que NO esté en modo nuevo
+    setIsNewIngredient(false);
   };
 
   const handleNewIngredient = () => {
-    setEditingIngredient(null); // Limpiar el ingredient en edición
-    setIsNewIngredient(true); // Establecer que se está creando un nuevo ingredient
+    setEditingIngredient(null);
+    setIsNewIngredient(true);
   };
 
   const handleEditFormSubmit = async (editedIngredient) => {
     try {
       const response = await fetch("/api/ingredient", {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ ...editedIngredient, actualizar: true }), // Indicamos el tipo de operación
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...editedIngredient, actualizar: true }),
       });
 
       if (response.ok) {
         const updatedIngredient = await response.json();
-
-        // 1. Actualiza la lista
         const updatedIngredients = ingredients.map((ingredient) =>
-          ingredient.id === updatedIngredient.id
-            ? updatedIngredient
-            : ingredient
+          ingredient.id === updatedIngredient.id ? updatedIngredient : ingredient
         );
         setIngredients(updatedIngredients);
-
-        // 2. Mantiene el formulario con los datos actualizados
         setEditingIngredient(updatedIngredient);
         setIsNewIngredient(false);
       } else {
-        console.error("Error al editar el ingredient:", response.statusText);
+        console.error("Error al editar:", response.statusText);
       }
     } catch (error) {
-      console.error("Error al editar el ingredient:", error.message);
+      console.error("Error al editar:", error.message);
     }
   };
 
@@ -89,21 +90,20 @@ function IngredientTable() {
     try {
       const response = await fetch("/api/ingredient", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newIngredient),
       });
+
       if (response.ok) {
         const createdIngredient = await response.json();
-        setIngredients([...ingredients, createdIngredient]); // Agregar el nuevo ingredient a la lista
-        setIsNewIngredient(false); // Salir del modo de creación de nuevo ingredient
+        setIngredients([...ingredients, createdIngredient]);
+        setIsNewIngredient(false);
         setEditingIngredient(null);
       } else {
-        console.error("Error al crear el ingredient:", response.statusText);
+        console.error("Error al crear:", response.statusText);
       }
     } catch (error) {
-      console.error("Error al crear el ingredient:", error.message);
+      console.error("Error al crear:", error.message);
     }
   };
 
@@ -118,9 +118,22 @@ function IngredientTable() {
           Nuevo +
         </button>
       </div>
+
+      {/* 🔍 Input de búsqueda */}
+      <div className="mb-6">
+        <input
+          type="text"
+          placeholder="Buscar ingrediente..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full px-4 py-2 rounded-md border border-gray-400 text-gray-900"
+        />
+      </div>
+
+      {/* Formulario dinámico */}
       {(editingIngredient !== null || isNewIngredient) && (
         <IngredientForm
-          key={editingIngredient?.id || "new"} // esto fuerza un reinicio cada vez que cambias de modo
+          key={editingIngredient?.id || "new"}
           ingredient={editingIngredient || null}
           onSubmit={
             isNewIngredient
@@ -130,11 +143,11 @@ function IngredientTable() {
           isNewIngredient={isNewIngredient}
         />
       )}
+
+      {/* Listado filtrado */}
       <div className="flex flex-col gap-4 border-solid border rounded-md border-gray-600 p-5">
-        <h1 className="text-slate-200 font-medium text-xl">
-          Listado Actualizado
-        </h1>
-        {ingredients.map((ingredient) => (
+        <h1 className="text-slate-200 font-medium text-xl">Listado Actualizado</h1>
+        {filteredIngredients.map((ingredient) => (
           <IngredientItem
             key={ingredient.id}
             ingredient={ingredient}

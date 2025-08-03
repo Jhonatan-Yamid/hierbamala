@@ -1,118 +1,71 @@
 "use client";
-import ProductForm from "@/app/dashboard/products/ProductForm";
-import { useState, useEffect } from "react";
-import ProductItem from "./ProductItem"; // Asegúrate de que la ruta sea correcta
+import { useEffect, useState } from "react";
+import ProductItem from "@/components/ProductItem";
+import { useRouter } from "next/navigation";
 
-function ProductTable() {
+export default function ProductListPage() {
   const [products, setProducts] = useState([]);
-  const [editingProduct, setEditingProduct] = useState(null);
-  const [isNewProduct, setIsNewProduct] = useState(false);
+  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const router = useRouter();
+
+  const fetchProducts = async () => {
+    const res = await fetch("/api/products");
+    const data = await res.json();
+    setProducts(data);
+    setFilteredProducts(data);
+  };
 
   useEffect(() => {
-    fetch("/api/product")
-      .then((res) => res.json())
-      .then((data) => {
-        console.log("Datos recibidos del servidor:", data);
-        setProducts(data);
-      })
-      .catch((error) => {
-        console.error("Error al obtener los datos del servidor:", error);
-      });
+    fetchProducts();
   }, []);
 
-  const handleDelete = async (id) => {
-    console.log(id);
-    try {
-      const response = await fetch(`/api/product`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ id }),
-      });
+  useEffect(() => {
+    const filtered = products.filter((product) =>
+      product.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredProducts(filtered);
+  }, [searchTerm, products]);
 
-      if (response.ok) {
-        setProducts(products.filter((product) => product.id !== id));
-      } else {
-        console.error("Error al eliminar el producto:", response.statusText);
-      }
-    } catch (error) {
-      console.error("Error al eliminar el producto:", error.message);
-    }
+  const handleDelete = async (id) => {
+    await fetch("/api/products", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+    fetchProducts();
   };
 
   const handleEdit = (product) => {
-    setEditingProduct(product);
-  };
-
-  const handleNewProduct = () => {
-    setEditingProduct(null); // Limpiar el producto en edición
-    setIsNewProduct(true); // Establecer que se está creando un nuevo producto
-  };
-
-  const handleEditFormSubmit = async (editedProduct) => {
-    console.log(editedProduct);
-    try {
-      const response = await fetch(`/api/product`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(editedProduct),
-      });
-
-      if (response.ok) {
-        const updatedProduct = await response.json();
-        const updatedProducts = products.map((product) =>
-          product.id === updatedProduct.id ? updatedProduct : product
-        );
-        setProducts(updatedProducts);
-        setEditingProduct(null); // Reiniciar el estado de edición
-      } else {
-        console.error("Error al editar el producto:", response.statusText);
-      }
-    } catch (error) {
-      console.error("Error al editar el producto:", error.message);
-    }
-  };
-
-  const handleNewProductFormSubmit = async (newProduct) => {
-    try {
-      const response = await fetch("/api/product", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(newProduct),
-      });
-
-      if (response.ok) {
-        const createdProduct = await response.json();
-        setProducts([...products, createdProduct]); // Agregar el nuevo producto a la lista
-        setIsNewProduct(false); // Salir del modo de creación de nuevo producto
-      } else {
-        console.log(response);
-        console.error("Error al crear el producto:", response.statusText);
-      }
-    } catch (error) {
-      console.error("Error al crear el producto:", error.message);
-    }
+    router.push(`/dashboard/products/${product.id}/edit`);
   };
 
   return (
-    <div className="p-6">
+    <div className="p-6 text-white">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-slate-200 font-semibold text-3xl">Productos</h1>
+        <h1 className="text-3xl font-bold">Productos</h1>
         <button
-          className="bg-gray-800 text-gray-200 flex items-center rounded-md px-4 py-1 hover:bg-gray-600 hover:text-white"
-          onClick={handleNewProduct}
+          onClick={() => router.push("/dashboard/products/new")}
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
         >
-          Nuevo +
+          Nuevo Producto
         </button>
       </div>
-      <div className="flex flex-col gap-4 border-solid border rounded-md border-gray-600 p-5">
-        <h1 className="text-slate-200 font-medium text-xl">Listado de Productos</h1>
-        {products.map((product) => (
+
+      {/* Buscador de productos */}
+      <div className="mb-4">
+        <input
+          type="text"
+          placeholder="Buscar producto por nombre..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full p-2 bg-gray-900 border border-gray-700 rounded-md"
+        />
+      </div>
+
+      {/* Lista filtrada */}
+      <div className="space-y-4">
+        {filteredProducts.map((product) => (
           <ProductItem
             key={product.id}
             product={product}
@@ -120,17 +73,10 @@ function ProductTable() {
             onDelete={handleDelete}
           />
         ))}
+        {filteredProducts.length === 0 && (
+          <p className="text-gray-400">No se encontraron productos.</p>
+        )}
       </div>
-
-      {editingProduct !== null || isNewProduct ? (
-        <ProductForm
-          product={editingProduct || null}
-          onSubmit={isNewProduct ? handleNewProductFormSubmit : handleEditFormSubmit}
-          isNewProduct={isNewProduct}
-        />
-      ) : null}
     </div>
   );
 }
-
-export default ProductTable;
