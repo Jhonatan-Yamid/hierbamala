@@ -26,9 +26,9 @@ function DailySales() {
         const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 13); // 3:00 p.m.
         const endOfToday = new Date(startOfToday);
         endOfToday.setDate(endOfToday.getDate() + 1);
-        endOfToday.setHours(6, 0, 0, 0); // 4:00 a.m. del siguiente día
+        endOfToday.setHours(9, 0, 0, 0); // 4:00 a.m. del siguiente día
 
-        if (now < endOfToday && now.getHours() < 6) {
+        if (now < endOfToday && now.getHours() < 9) {
             startOfToday.setDate(startOfToday.getDate() - 1);
             endOfToday.setDate(endOfToday.getDate() - 1);
         }

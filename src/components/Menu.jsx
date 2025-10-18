@@ -85,6 +85,15 @@ const Menu = ({ session }) => {
                     </li>
                     <li>
                       <Link
+                        href="/dashboard/salesDaily"
+                        className="text-white"
+                        onClick={closeMenu}
+                      >
+                        Reportes
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
                         href="/dashboard/ingredients"
                         className="text-white"
                         onClick={closeMenu}

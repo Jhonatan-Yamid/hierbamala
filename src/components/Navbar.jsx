@@ -57,6 +57,9 @@ async function Navbar() {
                   <Link href="/dashboard/saleTable">Ventas</Link>
                 </li>
                 <li>
+                  <Link href="/dashboard/salesDaily">Reportes</Link>
+                </li>
+                <li>
                   <Link href="/dashboard/IngredientInventory">Inventario</Link>
                 </li>
                 <li>
