@@ -158,20 +158,30 @@ export async function PUT(request, { params }) {
           );
         }
 
-        // 👇 Descontar ingredientes del inventario
+        // 👇 Solo se agrega validación AQUÍ — resto intacto 👇
         const ingredients = await prisma.productIngredient.findMany({
           where: { productId: product.id },
         });
 
         for (const ing of ingredients) {
-          await prisma.ingredient.update({
+          const ingredient = await prisma.ingredient.findUnique({
             where: { id: ing.ingredientId },
-            data: {
-              quantity: {
-                decrement: ing.quantity * product.quantity,
-              },
-            },
+            select: { quantity: true },
           });
+
+          if (!ingredient) continue;
+
+          // ✅ Evitar que descuente si la cantidad está en 0 o menor
+          if (ingredient.quantity > 0) {
+            const newQuantity = Math.max(0, ingredient.quantity - (ing.quantity * product.quantity));
+
+            await prisma.ingredient.update({
+              where: { id: ing.ingredientId },
+              data: { quantity: newQuantity },
+            });
+          } else {
+            console.warn(`⚠️ Ingrediente ${ing.ingredientId} tiene existencia 0, no se descuenta.`);
+          }
         }
       }
     });
@@ -187,6 +197,7 @@ export async function PUT(request, { params }) {
     return NextResponse.json({ message: errorMessage }, { status: 500 });
   }
 }
+
 
 
 // Este 'handler' es de Next.js Pages Router y está mezclado con la estructura de App Router.

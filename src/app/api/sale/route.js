@@ -90,16 +90,34 @@ export async function POST(request) {
                 where: { productId: product.id },
             });
 
+
             for (const ing of ingredients) {
-                await db.ingredient.update({
+                const ingredient = await db.ingredient.findUnique({
                     where: { id: ing.ingredientId },
-                    data: {
-                        quantity: {
-                            decrement: ing.quantity * product.quantity,
-                        },
-                    },
+                    select: { id: true, quantity: true },
                 });
+
+                if (!ingredient) continue; // si no existe, saltar
+
+                const totalToDecrement = ing.quantity * product.quantity;
+
+                // ✅ Validación para evitar negativos
+                if (ingredient.quantity > 0) {
+                    const newQuantity = Math.max(0, ingredient.quantity - totalToDecrement);
+
+                    if (newQuantity !== ingredient.quantity) {
+                        await db.ingredient.update({
+                            where: { id: ing.ingredientId },
+                            data: { quantity: newQuantity },
+                        });
+                    }
+                } else {
+                    console.warn(
+                        `⚠️ Ingrediente ${ing.ingredientId} tiene existencia 0, no se descuenta más.`
+                    );
+                }
             }
+
         }
 
         const finalSale = await db.sale.findUnique({
@@ -153,15 +171,26 @@ export async function DELETE(request) {
                 });
 
                 for (const ing of ingredients) {
+                    const ingredient = await prisma.ingredient.findUnique({
+                        where: { id: ing.ingredientId },
+                        select: { id: true, quantity: true },
+                    });
+
+                    if (!ingredient) {
+                        console.warn(`⚠️ Ingrediente ${ing.ingredientId} no encontrado, se omite.`);
+                        continue;
+                    }
+
+                    const totalToIncrement = ing.quantity * sp.quantity;
+                    const newQuantity = ingredient.quantity + totalToIncrement;
+
+                    // ✅ Aumenta la existencia, asegurando que nunca sea negativa
                     await prisma.ingredient.update({
                         where: { id: ing.ingredientId },
-                        data: {
-                            quantity: {
-                                increment: ing.quantity * sp.quantity,
-                            },
-                        },
+                        data: { quantity: newQuantity },
                     });
                 }
+
             }
 
             await prisma.saleProductAddition.deleteMany({
