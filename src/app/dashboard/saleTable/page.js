@@ -322,100 +322,112 @@ function DailySales() {
 
             {/* Vista previa (si tienes un componente de modal separado puedes seguir usándolo) */}
             {showPreview && (
-                <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
-                    <div className="bg-gray-900 p-6 rounded-lg w-full max-w-2xl h-[85vh] overflow-hidden relative">
+                <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+                    <div className="bg-gray-900 w-full h-full max-h-screen overflow-hidden flex flex-col relative rounded-none">
                         {/* Encabezado */}
-                        <div className="flex justify-between items-center mb-4 border-b border-gray-700 pb-2">
-                            <h2 className="text-white text-2xl font-semibold">Vista Previa de la Comanda</h2>
-                            <button className="text-white hover:text-gray-400" onClick={closePreviewModal}>
-                                <IoClose size={30} />
+                        <div className="flex justify-between items-center px-6 py-4 border-b border-gray-700">
+                            <h2 className="text-white text-2xl font-semibold">
+                                Vista Previa de la Comanda
+                            </h2>
+                            <button
+                                className="text-white hover:text-gray-400"
+                                onClick={closePreviewModal}
+                            >
+                                <IoClose size={32} />
                             </button>
                         </div>
 
-                        {/* Cálculo agrupado */}
-                        {(() => {
-                            const grouped = [];
-                            selectedProducts.forEach((p) => {
-                                const existing = grouped.find(
-                                    (g) =>
-                                        g.name === p.name &&
-                                        g.observation === p.observation &&
-                                        JSON.stringify(g.additions) === JSON.stringify(p.additions)
-                                );
-                                if (existing) {
-                                    existing.quantity += p.quantity;
-                                } else {
-                                    grouped.push({ ...p });
-                                }
-                            });
-                            return (
-                                <div className="overflow-auto h-[calc(100%-160px)]">
-                                    {grouped.length === 0 ? (
+                        {/* Contenido scrollable */}
+                        <div className="flex-1 overflow-y-auto px-6 py-4">
+                            {(() => {
+                                const grouped = [];
+                                selectedProducts.forEach((p) => {
+                                    const existing = grouped.find(
+                                        (g) =>
+                                            g.name === p.name &&
+                                            g.observation === p.observation &&
+                                            JSON.stringify(g.additions) ===
+                                            JSON.stringify(p.additions)
+                                    );
+                                    if (existing) {
+                                        existing.quantity += p.quantity;
+                                    } else {
+                                        grouped.push({ ...p });
+                                    }
+                                });
+
+                                if (grouped.length === 0) {
+                                    return (
                                         <p className="text-gray-400 text-center mt-10">
                                             No hay productos en esta venta
                                         </p>
-                                    ) : (
-                                        <ul className="space-y-4">
-                                            {grouped.map((product, index) => (
-                                                <li
-                                                    key={index}
-                                                    className="bg-gray-800 p-3 rounded-lg shadow-sm border border-gray-700"
-                                                >
-                                                    <div className="flex justify-between items-center mb-2">
-                                                        <h3 className="text-lg font-semibold text-white">
-                                                            {product.name}
-                                                        </h3>
-                                                        <span className="text-sm text-gray-400">
-                                                            x{product.quantity}
-                                                        </span>
-                                                    </div>
+                                    );
+                                }
 
-                                                    {product.observation && (
-                                                        <p className="text-sm text-gray-300 italic mb-1">
-                                                            Obs: {product.observation}
-                                                        </p>
-                                                    )}
+                                return (
+                                    <ul className="space-y-4 pb-40">
+                                        {grouped.map((product, index) => (
+                                            <li
+                                                key={index}
+                                                className="bg-gray-800 p-3 rounded-lg shadow-sm border border-gray-700"
+                                            >
+                                                <div className="flex justify-between items-center mb-2">
+                                                    <h3 className="text-lg font-semibold text-white">
+                                                        {product.name}
+                                                    </h3>
+                                                    <span className="text-sm text-gray-400">
+                                                        x{product.quantity}
+                                                    </span>
+                                                </div>
 
-                                                    {product.additions?.length > 0 && (
-                                                        <ul className="text-sm text-gray-400 mt-1 pl-4 list-disc">
-                                                            {product.additions.map((add, i) => (
-                                                                <li key={i}>
-                                                                    + {add.name} (
-                                                                    {new Intl.NumberFormat("es-CL", {
+                                                {product.observation && (
+                                                    <p className="text-sm text-gray-300 italic mb-1">
+                                                        Obs: {product.observation}
+                                                    </p>
+                                                )}
+
+                                                {product.additions?.length > 0 && (
+                                                    <ul className="text-sm text-gray-400 mt-1 pl-4 list-disc">
+                                                        {product.additions.map((add, i) => (
+                                                            <li key={i}>
+                                                                + {add.name} (
+                                                                {new Intl.NumberFormat(
+                                                                    "es-CL",
+                                                                    {
                                                                         style: "currency",
                                                                         currency: "CLP",
-                                                                    }).format(add.price)}
-                                                                    )
-                                                                </li>
-                                                            ))}
-                                                        </ul>
+                                                                    }
+                                                                ).format(add.price)}
+                                                                )
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                )}
+
+                                                <p className="text-right text-green-400 font-semibold mt-2">
+                                                    {new Intl.NumberFormat("es-CL", {
+                                                        style: "currency",
+                                                        currency: "CLP",
+                                                    }).format(
+                                                        (product.price +
+                                                            (product.additions?.reduce(
+                                                                (sum, a) => sum + a.price,
+                                                                0
+                                                            ) || 0)) * product.quantity
                                                     )}
+                                                </p>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                );
+                            })()}
+                        </div>
 
-                                                    <p className="text-right text-green-400 font-semibold mt-2">
-                                                        {new Intl.NumberFormat("es-CL", {
-                                                            style: "currency",
-                                                            currency: "CLP",
-                                                        }).format(
-                                                            (product.price +
-                                                                (product.additions?.reduce(
-                                                                    (sum, a) => sum + a.price,
-                                                                    0
-                                                                ) || 0)) * product.quantity
-                                                        )}
-                                                    </p>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    )}
-                                </div>
-                            );
-                        })()}
-
-                        {/* Pie de la modal */}
-                        {/* Pie de la modal */}
+                        {/* Pie de la modal fijo abajo */}
                         {(() => {
                             const subtotal = selectedProducts.reduce((acc, p) => {
-                                const adds = p.additions?.reduce((s, a) => s + a.price, 0) || 0;
+                                const adds =
+                                    p.additions?.reduce((s, a) => s + a.price, 0) || 0;
                                 return acc + (p.price + adds) * p.quantity;
                             }, 0);
 
@@ -423,8 +435,8 @@ function DailySales() {
                             const change = received - subtotal;
 
                             return (
-                                <div className="absolute bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 p-4 flex flex-col gap-3">
-                                    {/* Subtotal */}
+                                <div className="bg-gray-800 border-t border-gray-700 px-6 py-4 flex flex-col gap-3 sticky bottom-0">
+                                    {/* Subtotal y botón */}
                                     <div className="flex justify-between items-center">
                                         <p className="text-white font-semibold text-lg">
                                             Subtotal:{" "}
@@ -435,25 +447,29 @@ function DailySales() {
                                         </p>
 
                                         {["en proceso", "en mesa"].includes(
-                                            sales.find((s) => s.id === selectedSaleId)?.status
+                                            sales.find((s) => s.id === selectedSaleId)
+                                                ?.status
                                         ) && (
                                                 <button
                                                     onClick={() =>
                                                         handleStatusAdvance(
-                                                            sales.find((s) => s.id === selectedSaleId)
+                                                            sales.find(
+                                                                (s) => s.id === selectedSaleId
+                                                            )
                                                         )
                                                     }
                                                     className="bg-emerald-700 hover:bg-emerald-600 text-white font-semibold px-4 py-2 rounded-lg shadow-md"
                                                 >
-                                                    {sales.find((s) => s.id === selectedSaleId)?.status ===
-                                                        "en proceso"
+                                                    {sales.find(
+                                                        (s) => s.id === selectedSaleId
+                                                    )?.status === "en proceso"
                                                         ? "Orden lista"
                                                         : "Marcar como pagada"}
                                                 </button>
                                             )}
                                     </div>
 
-                                    {/* Campo de efectivo recibido */}
+                                    {/* Monto recibido y cambio */}
                                     <div className="flex flex-col mt-2">
                                         <label className="text-gray-300 text-sm mb-1">
                                             Monto recibido
@@ -462,7 +478,9 @@ function DailySales() {
                                             <input
                                                 type="number"
                                                 value={cashReceived}
-                                                onChange={(e) => setCashReceived(e.target.value)}
+                                                onChange={(e) =>
+                                                    setCashReceived(e.target.value)
+                                                }
                                                 placeholder="Ej: 30000"
                                                 className="bg-gray-700 text-white px-3 py-2 rounded-md w-32 text-right"
                                             />
@@ -498,10 +516,10 @@ function DailySales() {
                                 </div>
                             );
                         })()}
-
                     </div>
                 </div>
             )}
+
 
 
 
