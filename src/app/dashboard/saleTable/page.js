@@ -15,6 +15,9 @@ function DailySales() {
     const [selectedProducts, setSelectedProducts] = useState([]);
     const [showPreview, setShowPreview] = useState(false);
     const [activeTab, setActiveTab] = useState("today");
+    const [selectedSaleId, setSelectedSaleId] = useState(null);
+    const [cashReceived, setCashReceived] = useState("");
+
 
     const getTodayDate = () => {
         const today = new Date();
@@ -67,10 +70,23 @@ function DailySales() {
         fetchSalesData();
     }, [fetchSalesData]);
 
-    const handlePreview = (sale) => {
-        setSelectedProducts(sale.products || []);
-        setShowPreview(true);
+    const handlePreview = async (sale) => {
+        try {
+            const res = await fetch(`/api/sale/${sale.id}`);
+            if (!res.ok) throw new Error("Error al obtener detalles de la venta");
+            const data = await res.json();
+
+            setSelectedSaleId(sale.id);
+            setSelectedProducts(data.products || []);
+            setShowPreview(true);
+        } catch (error) {
+            console.error("Error al obtener venta:", error);
+            alert("No se pudo cargar la vista previa de la comanda");
+        }
     };
+
+
+
 
     const closePreviewModal = () => setShowPreview(false);
 
@@ -307,29 +323,189 @@ function DailySales() {
             {/* Vista previa (si tienes un componente de modal separado puedes seguir usándolo) */}
             {showPreview && (
                 <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
-                    <div className="bg-gray-900 p-6 rounded-lg w-1/2 h-1/2 relative">
-                        <div className="flex justify-between items-center mb-4">
+                    <div className="bg-gray-900 p-6 rounded-lg w-full max-w-2xl h-[85vh] overflow-hidden relative">
+                        {/* Encabezado */}
+                        <div className="flex justify-between items-center mb-4 border-b border-gray-700 pb-2">
                             <h2 className="text-white text-2xl font-semibold">Vista Previa de la Comanda</h2>
                             <button className="text-white hover:text-gray-400" onClick={closePreviewModal}>
                                 <IoClose size={30} />
                             </button>
                         </div>
-                        <div className="overflow-auto">
-                            <ul className="space-y-4">
-                                {selectedProducts.map((product, index) => (
-                                    <li key={index} className="text-white">
-                                        {product.name} - Cantidad: {product.quantity} |{" "}
-                                        {new Intl.NumberFormat("es-CL", {
-                                            style: "currency",
-                                            currency: "CLP",
-                                        }).format(product.price * product.quantity)}
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
+
+                        {/* Cálculo agrupado */}
+                        {(() => {
+                            const grouped = [];
+                            selectedProducts.forEach((p) => {
+                                const existing = grouped.find(
+                                    (g) =>
+                                        g.name === p.name &&
+                                        g.observation === p.observation &&
+                                        JSON.stringify(g.additions) === JSON.stringify(p.additions)
+                                );
+                                if (existing) {
+                                    existing.quantity += p.quantity;
+                                } else {
+                                    grouped.push({ ...p });
+                                }
+                            });
+                            return (
+                                <div className="overflow-auto h-[calc(100%-160px)]">
+                                    {grouped.length === 0 ? (
+                                        <p className="text-gray-400 text-center mt-10">
+                                            No hay productos en esta venta
+                                        </p>
+                                    ) : (
+                                        <ul className="space-y-4">
+                                            {grouped.map((product, index) => (
+                                                <li
+                                                    key={index}
+                                                    className="bg-gray-800 p-3 rounded-lg shadow-sm border border-gray-700"
+                                                >
+                                                    <div className="flex justify-between items-center mb-2">
+                                                        <h3 className="text-lg font-semibold text-white">
+                                                            {product.name}
+                                                        </h3>
+                                                        <span className="text-sm text-gray-400">
+                                                            x{product.quantity}
+                                                        </span>
+                                                    </div>
+
+                                                    {product.observation && (
+                                                        <p className="text-sm text-gray-300 italic mb-1">
+                                                            Obs: {product.observation}
+                                                        </p>
+                                                    )}
+
+                                                    {product.additions?.length > 0 && (
+                                                        <ul className="text-sm text-gray-400 mt-1 pl-4 list-disc">
+                                                            {product.additions.map((add, i) => (
+                                                                <li key={i}>
+                                                                    + {add.name} (
+                                                                    {new Intl.NumberFormat("es-CL", {
+                                                                        style: "currency",
+                                                                        currency: "CLP",
+                                                                    }).format(add.price)}
+                                                                    )
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    )}
+
+                                                    <p className="text-right text-green-400 font-semibold mt-2">
+                                                        {new Intl.NumberFormat("es-CL", {
+                                                            style: "currency",
+                                                            currency: "CLP",
+                                                        }).format(
+                                                            (product.price +
+                                                                (product.additions?.reduce(
+                                                                    (sum, a) => sum + a.price,
+                                                                    0
+                                                                ) || 0)) * product.quantity
+                                                        )}
+                                                    </p>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                </div>
+                            );
+                        })()}
+
+                        {/* Pie de la modal */}
+                        {/* Pie de la modal */}
+                        {(() => {
+                            const subtotal = selectedProducts.reduce((acc, p) => {
+                                const adds = p.additions?.reduce((s, a) => s + a.price, 0) || 0;
+                                return acc + (p.price + adds) * p.quantity;
+                            }, 0);
+
+                            const received = parseFloat(cashReceived || 0);
+                            const change = received - subtotal;
+
+                            return (
+                                <div className="absolute bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 p-4 flex flex-col gap-3">
+                                    {/* Subtotal */}
+                                    <div className="flex justify-between items-center">
+                                        <p className="text-white font-semibold text-lg">
+                                            Subtotal:{" "}
+                                            {new Intl.NumberFormat("es-CL", {
+                                                style: "currency",
+                                                currency: "CLP",
+                                            }).format(subtotal)}
+                                        </p>
+
+                                        {["en proceso", "en mesa"].includes(
+                                            sales.find((s) => s.id === selectedSaleId)?.status
+                                        ) && (
+                                                <button
+                                                    onClick={() =>
+                                                        handleStatusAdvance(
+                                                            sales.find((s) => s.id === selectedSaleId)
+                                                        )
+                                                    }
+                                                    className="bg-emerald-700 hover:bg-emerald-600 text-white font-semibold px-4 py-2 rounded-lg shadow-md"
+                                                >
+                                                    {sales.find((s) => s.id === selectedSaleId)?.status ===
+                                                        "en proceso"
+                                                        ? "Orden lista"
+                                                        : "Marcar como pagada"}
+                                                </button>
+                                            )}
+                                    </div>
+
+                                    {/* Campo de efectivo recibido */}
+                                    <div className="flex flex-col mt-2">
+                                        <label className="text-gray-300 text-sm mb-1">
+                                            Monto recibido
+                                        </label>
+                                        <div className="flex items-center gap-3">
+                                            <input
+                                                type="number"
+                                                value={cashReceived}
+                                                onChange={(e) => setCashReceived(e.target.value)}
+                                                placeholder="Ej: 30000"
+                                                className="bg-gray-700 text-white px-3 py-2 rounded-md w-32 text-right"
+                                            />
+                                            <div>
+                                                <p className="text-green-400 font-semibold text-lg">
+                                                    Cambio:{" "}
+                                                    {new Intl.NumberFormat("es-CL", {
+                                                        style: "currency",
+                                                        currency: "CLP",
+                                                    }).format(change > 0 ? change : 0)}
+                                                </p>
+                                                {cashReceived && (
+                                                    <p className="text-gray-400 text-xs">
+                                                        {new Intl.NumberFormat("es-CL", {
+                                                            style: "currency",
+                                                            currency: "CLP",
+                                                        }).format(received)}{" "}
+                                                        -{" "}
+                                                        {new Intl.NumberFormat("es-CL", {
+                                                            style: "currency",
+                                                            currency: "CLP",
+                                                        }).format(subtotal)}{" "}
+                                                        ={" "}
+                                                        {new Intl.NumberFormat("es-CL", {
+                                                            style: "currency",
+                                                            currency: "CLP",
+                                                        }).format(change)}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
                     </div>
                 </div>
             )}
+
+
+
+
         </div>
     );
 }

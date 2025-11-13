@@ -199,11 +199,6 @@ export async function PUT(request, { params }) {
 }
 
 
-
-// Este 'handler' es de Next.js Pages Router y está mezclado con la estructura de App Router.
-// Si estás usando Next.js App Router (rutas con funciones GET/POST/PUT exportadas),
-// esta parte del código probablemente no se está usando o está mal ubicada.
-// No la modifico ya que el enfoque es solo el de los juegos en las funciones GET y PUT.
 export default async function handler(req, res) {
   if (req.method === 'PUT' || req.method === 'PATCH') {
     const { id } = req.query;
@@ -219,7 +214,7 @@ export default async function handler(req, res) {
     }
 
     try {
-      // Nota: 'prisma' no está definido en este ámbito, necesitarías importarlo o usar 'db'
+
       const updatedSale = await db.sale.update({ // Cambiado de 'prisma.sale.update' a 'db.sale.update'
         where: {
           id: parseInt(id),
