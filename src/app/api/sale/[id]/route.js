@@ -1,16 +1,13 @@
 // src/app/api/sale/[id]/route.js
 import { NextResponse } from 'next/server';
-import db from '@/libs/db'; // Asegúrate de que db esté configurado correctamente
-import { nanoid } from 'nanoid'; // nanoid se usa para SaleProduct.id si es string y no @default(cuid())
+import db from '@/libs/db';
+import { nanoid } from 'nanoid';
 
 export async function GET(request, { params }) {
   try {
     const id = parseInt(params.id);
     if (isNaN(id)) {
-      return NextResponse.json(
-        { message: "ID de venta inválido" },
-        { status: 400 }
-      );
+      return NextResponse.json({ message: "ID de venta inválido" }, { status: 400 });
     }
     const sale = await db.sale.findUnique({
       where: { id: id },
@@ -21,7 +18,6 @@ export async function GET(request, { params }) {
             product: true
           }
         },
-        // *** MODIFICACIÓN PARA JUEGOS: Incluir el juego relacionado ***
         game: true,
       }
     });
@@ -30,17 +26,14 @@ export async function GET(request, { params }) {
       return NextResponse.json({ message: 'Venta no encontrada' }, { status: 404 });
     }
 
-    // Formatear la respuesta para coincidir con la estructura que espera el front
     const formattedSale = {
       ...sale,
       tableNumber: sale.table,
       saleStatus: sale.status,
       generalObservation: sale.generalObservation,
-      // *** MODIFICACIÓN PARA JUEGOS: Incluir gameId y game object en la respuesta ***
-      game: sale.game ? String(sale.game.id) : '', // Enviar el ID del juego como string si existe, si no, cadena vacía
-      gameDetails: sale.game || null, // Opcional: enviar el objeto completo del juego si el frontend lo necesita
-      // AÑADIR: orderType para el GET
-      orderType: sale.orderType || "En mesa", // Asumiendo un default si no está presente
+      game: sale.game ? String(sale.game.id) : '',
+      gameDetails: sale.game || null,
+      orderType: sale.orderType || "En mesa",
       products: sale.products.map(sp => ({
         id: sp.product.id,
         quantity: sp.quantity,
@@ -78,49 +71,40 @@ export async function PUT(request, { params }) {
 
     const gameId = game ? parseInt(game, 10) : null;
     if (game && isNaN(gameId)) {
-      return NextResponse.json({ message: 'ID de juego inválido' }, { status: 400 });
+      return NextResponse.json({ message: "ID de juego inválido" }, { status: 400 });
     }
 
-    await db.$transaction(async (prisma) => {
-      // 👉 1. Revertir inventario de ingredientes usados anteriormente
-      const oldProducts = await prisma.saleProduct.findMany({
+    // -- Validaciones básicas --
+    if (!Array.isArray(products)) {
+      return NextResponse.json({ message: "Products debe ser un array" }, { status: 400 });
+    }
+
+    // -------------------------------------------------
+    // 1) Transacción mínima: delete old -> update sale -> create new saleProducts (+ additions)
+    // -------------------------------------------------
+    const txResult = await db.$transaction(async (prisma) => {
+      // 1.a Obtener los saleProducts antiguos (id, productId, quantity)
+      const oldSaleProducts = await prisma.saleProduct.findMany({
+        where: { saleId: saleIdInt },
+        select: { id: true, productId: true, quantity: true },
+      });
+
+      const oldSaleProductIds = oldSaleProducts.map((s) => s.id);
+
+      // 1.b Borrar adiciones antiguas en batch (por saleProductId)
+      if (oldSaleProductIds.length > 0) {
+        await prisma.saleProductAddition.deleteMany({
+          where: { saleProductId: { in: oldSaleProductIds } },
+        });
+      }
+
+      // 1.c Borrar saleProducts antiguos
+      await prisma.saleProduct.deleteMany({
         where: { saleId: saleIdInt },
       });
 
-      for (const oldProduct of oldProducts) {
-        const ingredients = await prisma.productIngredient.findMany({
-          where: { productId: oldProduct.productId },
-        });
-
-        for (const ing of ingredients) {
-          await prisma.ingredient.update({
-            where: { id: ing.ingredientId },
-            data: {
-              quantity: {
-                increment: ing.quantity * oldProduct.quantity,
-              },
-            },
-          });
-        }
-      }
-
-      // 👉 2. Eliminar relaciones anteriores
-      await prisma.saleProductAddition.deleteMany({
-        where: {
-          saleProduct: {
-            saleId: saleIdInt
-          }
-        }
-      });
-
-      await prisma.saleProduct.deleteMany({
-        where: {
-          saleId: saleIdInt
-        }
-      });
-
-      // 👉 3. Actualizar venta principal
-      const updatedSale = await prisma.sale.update({
+      // 1.d Actualizar la venta principal
+      await prisma.sale.update({
         where: { id: saleIdInt },
         data: {
           totalAmount,
@@ -132,106 +116,140 @@ export async function PUT(request, { params }) {
         },
       });
 
-      // 👉 4. Crear productos nuevos y descontar ingredientes
-      for (const product of products) {
-        const saleProduct = await prisma.saleProduct.create({
-          data: {
-            id: nanoid(),
-            saleId: updatedSale.id,
-            productId: product.id,
-            quantity: product.quantity,
-            observation: product.observation || '',
-          },
+      // 1.e Preparar nuevos saleProducts con ids (generados con nanoid)
+      const newSaleProductsData = [];
+      const additionsData = []; // accumular todas las adiciones para createMany
+
+      for (const prod of products) {
+        const saleProductId = nanoid();
+        newSaleProductsData.push({
+          id: saleProductId,
+          saleId: saleIdInt,
+          productId: prod.id,
+          quantity: prod.quantity,
+          observation: prod.observation || '',
         });
 
-        if (product.additions?.length > 0) {
-          await Promise.all(
-            product.additions.map((addition) => {
-              return prisma.saleProductAddition.create({
-                data: {
-                  saleProductId: saleProduct.id,
-                  name: addition.name,
-                  price: addition.price,
-                },
-              });
-            })
-          );
-        }
-
-        // 👇 Solo se agrega validación AQUÍ — resto intacto 👇
-        const ingredients = await prisma.productIngredient.findMany({
-          where: { productId: product.id },
-        });
-
-        for (const ing of ingredients) {
-          const ingredient = await prisma.ingredient.findUnique({
-            where: { id: ing.ingredientId },
-            select: { quantity: true },
-          });
-
-          if (!ingredient) continue;
-
-          // ✅ Evitar que descuente si la cantidad está en 0 o menor
-          if (ingredient.quantity > 0) {
-            const newQuantity = Math.max(0, ingredient.quantity - (ing.quantity * product.quantity));
-
-            await prisma.ingredient.update({
-              where: { id: ing.ingredientId },
-              data: { quantity: newQuantity },
+        if (Array.isArray(prod.additions) && prod.additions.length > 0) {
+          for (const add of prod.additions) {
+            additionsData.push({
+              saleProductId,
+              name: add.name,
+              price: add.price,
+              additionId: add.id ?? null,
             });
-          } else {
-            console.warn(`⚠️ Ingrediente ${ing.ingredientId} tiene existencia 0, no se descuenta.`);
           }
         }
       }
+
+      // 1.f Crear los saleProducts en batch
+      if (newSaleProductsData.length > 0) {
+        // createMany soporta insertar ids que ya generamos
+        await prisma.saleProduct.createMany({
+          data: newSaleProductsData,
+          skipDuplicates: true,
+        });
+      }
+
+      // 1.g Crear todas las adiciones en batch
+      if (additionsData.length > 0) {
+        await prisma.saleProductAddition.createMany({
+          data: additionsData,
+          skipDuplicates: true,
+        });
+      }
+
+      // Retornar info mínima necesaria para ajustar inventario fuera de la tx
+      return {
+        oldSaleProducts, // array {id, productId, quantity}
+        newSaleProducts: newSaleProductsData.map((p) => ({
+          id: p.id,
+          productId: p.productId,
+          quantity: p.quantity,
+        })),
+      };
     });
 
-    return NextResponse.json({ message: 'Venta actualizada exitosamente' }, { status: 200 });
+    // -------------------------------------------------
+    // 2) Ajuste de inventario FUERA de la transacción (agrupado por ingredient)
+    // -------------------------------------------------
 
-  } catch (error) {
-    console.error('Error al actualizar la venta:', error);
-    if (error.code === 'P2003' && error.meta?.field_name === 'gameId') {
-      return NextResponse.json({ message: 'El ID de juego proporcionado no existe.' }, { status: 400 });
-    }
-    const errorMessage = error instanceof Error ? error.message : 'Error desconocido al actualizar la venta';
-    return NextResponse.json({ message: errorMessage }, { status: 500 });
-  }
-}
+    // 2.a Revertir inventario de productos antiguos (sumar)
+    if (Array.isArray(txResult.oldSaleProducts) && txResult.oldSaleProducts.length > 0) {
+      const productIdsToRestore = [...new Set(txResult.oldSaleProducts.map(p => p.productId))];
 
-
-export default async function handler(req, res) {
-  if (req.method === 'PUT' || req.method === 'PATCH') {
-    const { id } = req.query;
-    const { status } = req.body;
-
-    if (!id || !status) {
-      return res.status(400).json({ message: 'ID de venta o estado faltante' });
-    }
-
-    const allowedStatuses = ["en proceso", "en mesa", "pagada"];
-    if (!allowedStatuses.includes(status)) {
-      return res.status(400).json({ message: 'Estado proporcionado no válido' });
-    }
-
-    try {
-
-      const updatedSale = await db.sale.update({ // Cambiado de 'prisma.sale.update' a 'db.sale.update'
-        where: {
-          id: parseInt(id),
-        },
-        data: {
-          status: status,
-          updatedAt: new Date(),
-        },
+      // obtener todas las relaciones productIngredient para esos productos en UNA consulta
+      const productIngredients = await db.productIngredient.findMany({
+        where: { productId: { in: productIdsToRestore } },
+        select: { productId: true, ingredientId: true, quantity: true },
       });
 
-      res.status(200).json(updatedSale);
-    } catch (error) {
-      console.error("Error al actualizar el estado de la venta:", error);
-      res.status(500).json({ message: 'Error al actualizar el estado de la venta', error: error.message });
+      // calcular incrementos por ingredientId
+      const incrementsByIngredient = new Map(); // ingredientId -> totalIncrement
+
+      for (const old of txResult.oldSaleProducts) {
+        const related = productIngredients.filter(pi => pi.productId === old.productId);
+        for (const pi of related) {
+          const inc = (incrementsByIngredient.get(pi.ingredientId) || 0) + (pi.quantity * old.quantity);
+          incrementsByIngredient.set(pi.ingredientId, inc);
+        }
+      }
+
+      // aplicar increments (uno por ingrediente)
+      for (const [ingredientId, totalInc] of incrementsByIngredient.entries()) {
+        await db.ingredient.update({
+          where: { id: ingredientId },
+          data: { quantity: { increment: totalInc } },
+        });
+      }
     }
-  } else {
-    res.setHeader('Allow', ['PUT', 'PATCH']);
-    res.status(405).end(`Method ${req.method} Not Allowed`);
+
+    // 2.b Descontar inventario por los nuevos productos (restar)
+    if (Array.isArray(txResult.newSaleProducts) && txResult.newSaleProducts.length > 0) {
+      const productIdsToDeduct = [...new Set(txResult.newSaleProducts.map(p => p.productId))];
+
+      const productIngredientsForNew = await db.productIngredient.findMany({
+        where: { productId: { in: productIdsToDeduct } },
+        select: { productId: true, ingredientId: true, quantity: true },
+      });
+
+      // calcular decrementos por ingredientId
+      const decrementsByIngredient = new Map(); // ingredientId -> totalToSubtract
+
+      for (const np of txResult.newSaleProducts) {
+        const related = productIngredientsForNew.filter(pi => pi.productId === np.productId);
+        for (const pi of related) {
+          const dec = (decrementsByIngredient.get(pi.ingredientId) || 0) + (pi.quantity * np.quantity);
+          decrementsByIngredient.set(pi.ingredientId, dec);
+        }
+      }
+
+      // Aplicar decrementos en lote (uno por ingrediente)
+      for (const [ingredientId, totalDec] of decrementsByIngredient.entries()) {
+        // obtener cantidad actual
+        const current = await db.ingredient.findUnique({
+          where: { id: ingredientId },
+          select: { quantity: true },
+        });
+
+        if (!current) continue;
+
+        const newQty = Math.max(0, (current.quantity || 0) - totalDec);
+
+        await db.ingredient.update({
+          where: { id: ingredientId },
+          data: { quantity: newQty },
+        });
+      }
+    }
+
+    return NextResponse.json({ message: 'Venta actualizada exitosamente' }, { status: 200 });
+  } catch (error) {
+    console.error('Error al actualizar la venta:', error);
+    // Enviar detalles de error minimalistas
+    const msg = error instanceof Error ? error.message : 'Error desconocido al actualizar la venta';
+    return NextResponse.json({ message: msg }, { status: 500 });
   }
 }
+
+export default null; // no handler de Pages Router aquí
