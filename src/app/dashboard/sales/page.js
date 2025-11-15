@@ -1,4 +1,3 @@
-// components/SalesForm.jsx
 "use client";
 
 import React, { useState } from "react";
@@ -38,40 +37,52 @@ const SalesForm = ({ saleId }) => {
     formatTicket,
     setIpPrint,
     ipPrint,
-    // NUEVO: Importar orderType y setOrderType
+    // NUEVO: orderType y setOrderType
     orderType,
     setOrderType,
   } = useSalesFormLogic(saleId);
 
   if (isLoading) {
     return (
-      <div className="text-center p-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
-        <p className="mt-2">Cargando datos de la venta...</p>
+      <div className="w-full flex flex-col items-center justify-center p-6">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-700" />
+        <p className="mt-3 text-gray-300">Cargando datos de la venta...</p>
       </div>
     );
   }
-  
 
   const handlePay = async () => {
+    // Validación front: número de mesa obligatorio
+    if (!tableNumber || tableNumber.toString().trim() === "") {
+      setError("El número de mesa es obligatorio.");
+      // Scroll suave a top del formulario (si aplica)
+      window?.scrollTo?.({ top: 0, behavior: "smooth" });
+      return;
+    }
+
     const saleData = {
       tableNumber,
       saleStatus,
       generalObservation,
       totalAmount: calculateTotal(),
       game: game,
-      orderType, // NUEVO: Incluir orderType en el payload
+      orderType,
       products: products.map((p) => ({
         id: p.id,
         quantity: p.quantity || 1,
-        observation: p.observation === "" || p.observation === undefined ? null : p.observation,
-        additions: p.additions?.map((a) => ({ id: a.id || a.name, name: a.name, price: a.price })) || [],
+        observation:
+          p.observation === "" || p.observation === undefined
+            ? null
+            : p.observation,
+        additions:
+          p.additions?.map((a) => ({ id: a.id || a.name, name: a.name, price: a.price })) ||
+          [],
       })),
     };
 
     try {
-      const url = isEditing ? `/api/sale/${saleId}` : '/api/sale';
-      const method = isEditing ? 'PUT' : 'POST';
+      const url = isEditing ? `/api/sale/${saleId}` : "/api/sale";
+      const method = isEditing ? "PUT" : "POST";
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
@@ -79,8 +90,8 @@ const SalesForm = ({ saleId }) => {
       });
 
       if (res.ok) {
-        console.log("Venta guardada exitosamente.");
-
+        // limpiar error y mostrar preview
+        setError(null);
         if (shouldPrint) {
           await handlePrint();
         }
@@ -108,14 +119,14 @@ const SalesForm = ({ saleId }) => {
       products: formattedProducts,
       total: calculateTotal(),
       tableNumber: tableNumber || 0,
-      availableGames: game ? [availableGames.find((g) => g.id.toString() === game)?.name || "Sin juego"] : [],
+      availableGames: game
+        ? [availableGames.find((g) => g.id.toString() === game)?.name || "Sin juego"]
+        : [],
       generalObservation: generalObservation,
-      orderType: orderType, // NUEVO: Incluir orderType en los datos de impresión
+      orderType: orderType,
     };
 
     const printUrl = `${ipPrint.ip}/print`;
-    console.log("URL de impresión:", printUrl);
-    console.log("Datos a imprimir:", requestBody);
 
     try {
       const res = await fetch(printUrl, {
@@ -142,61 +153,80 @@ const SalesForm = ({ saleId }) => {
   };
 
   return (
-    <form onSubmit={e => e.preventDefault()} className="bg-gray-950 text-slate-200 p-6 rounded-md space-y-4">
-      <h2 className="text-xl font-bold">
-        {isEditing ? 'Editar Venta' : 'Nueva Venta'}
-      </h2>
+    <form onSubmit={(e) => e.preventDefault()} className="bg-[#070A0D] text-slate-200 p-6 rounded-2xl shadow-xl space-y-6">
+      <header className="flex items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-extrabold"> {isEditing ? "Editar Venta" : "Nueva Venta"}</h2>
+          <p className="text-sm text-gray-400">{new Date().toLocaleTimeString()} • Hierba Mala</p>
+        </div>
 
-      <ProductSearch
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-        suggestions={suggestions}
-        setSuggestions={setSuggestions}
-        availableProducts={availableProducts}
-        setProducts={setProducts}
-      />
+        <div className="flex items-center gap-3">
+          <div className="text-right">
+            <div className="text-xs text-gray-400">Total</div>
+            <div className="font-bold text-lg text-emerald-400">{new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP" }).format(calculateTotal())}</div>
+          </div>
+        </div>
+      </header>
 
-      <ProductList
-        products={products}
-        setProducts={setProducts}
-        availableAdditions={availableAdditions}
-        availableProducts={availableProducts}
-      />
-
-      <SaleInfoFields
-        tableNumber={tableNumber}
-        setTableNumber={setTableNumber}
-        game={game}
-        setGame={setGame}
-        availableGames={availableGames}
-        generalObservation={generalObservation}
-        setGeneralObservation={setGeneralObservation}
-        // NUEVO: Pasar orderType y setOrderType
-        orderType={orderType}
-        setOrderType={setOrderType}
-      />
-
-      {error && <div className="text-red-500 text-sm">{error}</div>}
-      <div className="flex items-center space-x-2">
-        <input
-          type="checkbox"
-          id="printOnSave"
-          checked={shouldPrint}
-          onChange={(e) => setShouldPrint(e.target.checked)}
-          className="w-4 h-4"
+      <div className="space-y-4">
+        <ProductSearch
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          suggestions={suggestions}
+          setSuggestions={setSuggestions}
+          availableProducts={availableProducts}
+          setProducts={setProducts}
         />
-        <label htmlFor="printOnSave" className="text-sm">
-          Imprimir al guardar
-        </label>
-      </div>
 
-      <button
-        type="button"
-        onClick={handlePay}
-        className="w-full p-2 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-md"
-      >
-        Guardar
-      </button>
+        <ProductList
+          products={products}
+          setProducts={setProducts}
+          availableAdditions={availableAdditions}
+          availableProducts={availableProducts}
+        />
+
+        <SaleInfoFields
+          tableNumber={tableNumber}
+          setTableNumber={setTableNumber}
+          game={game}
+          setGame={setGame}
+          availableGames={availableGames}
+          generalObservation={generalObservation}
+          setGeneralObservation={setGeneralObservation}
+          orderType={orderType}
+          setOrderType={setOrderType}
+        />
+
+        {error && <div className="text-red-400 text-sm rounded-md p-2 bg-red-900/20">{error}</div>}
+
+        <div className="flex flex-col sm:flex-row gap-3">
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={shouldPrint}
+              onChange={(e) => setShouldPrint(e.target.checked)}
+              className="w-4 h-4 rounded bg-gray-800 border border-gray-700"
+            />
+            <span className="text-gray-300">Imprimir al guardar</span>
+          </label>
+
+          <button
+            type="button"
+            onClick={handlePay}
+            className="ml-auto w-full sm:w-auto bg-emerald-500 hover:bg-emerald-600 text-black font-semibold px-5 py-2 rounded-lg shadow"
+          >
+            Guardar
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowPreview(true)}
+            className="w-full sm:w-auto bg-gray-800 border border-gray-700 hover:bg-gray-700 px-4 py-2 rounded-lg"
+          >
+            Ver Vista Previa
+          </button>
+        </div>
+      </div>
 
       {showPreview && (
         <TicketPreviewModal
@@ -206,14 +236,6 @@ const SalesForm = ({ saleId }) => {
           onClose={() => setShowPreview(false)}
         />
       )}
-
-      <button
-        type="button"
-        onClick={() => setShowPreview(true)}
-        className="w-full p-2 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-md"
-      >
-        Ver Vista Previa
-      </button>
     </form>
   );
 };

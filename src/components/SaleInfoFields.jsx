@@ -1,82 +1,102 @@
-// components/SaleInfoFields.jsx
 "use client";
 import React from "react";
+import { FaChair, FaTruck, FaGamepad, FaStickyNote } from "react-icons/fa";
 
 const SaleInfoFields = ({
   tableNumber,
   setTableNumber,
   game,
   setGame,
-  availableGames,
+  availableGames = [],
   generalObservation,
   setGeneralObservation,
   orderType,
   setOrderType,
 }) => {
   return (
-    <>
-      <div>
-        <label htmlFor="tableNumber" className="block text-sm font-medium">
-          Número de Mesa
-        </label>
-        <input
-          type="text"
-          id="tableNumber"
-          value={tableNumber}
-          onChange={(e) => setTableNumber(e.target.value)}
-          className="w-full p-2 mt-1 bg-gray-900 border border-gray-700 rounded-md"
-        />
+    <div className="w-full bg-[#0b0f12] border border-gray-800 rounded-2xl p-4 md:p-6 space-y-6 shadow-sm">
+
+      {/* Encabezado opcional */}
+      <h3 className="text-lg font-semibold text-gray-100">Información del Pedido</h3>
+
+      {/* GRID PRINCIPAL */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+        {/* Número de Mesa */}
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium flex items-center gap-2 text-gray-300">
+            <FaChair className="text-gray-400" />
+            Número de Mesa <span className="text-red-400">*</span>
+          </label>
+
+          <input
+            required
+            value={tableNumber}
+            onChange={(e) => setTableNumber(e.target.value)}
+            placeholder="Ej: 12"
+            className="p-2.5 bg-[#050607] border border-gray-800 rounded-lg w-full 
+            focus:ring-1 focus:ring-emerald-500"
+          />
+        </div>
+
+        {/* Tipo de Pedido */}
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium flex items-center gap-2 text-gray-300">
+            <FaTruck className="text-gray-400" />
+            Tipo de Pedido
+          </label>
+
+          <select
+            value={orderType}
+            onChange={(e) => setOrderType(e.target.value)}
+            className="p-2.5 bg-[#050607] border border-gray-800 rounded-lg w-full 
+            focus:ring-1 focus:ring-emerald-500"
+          >
+            <option value="En mesa">En mesa</option>
+            <option value="Llevar">Llevar</option>
+            <option value="Mixto">Mixto</option>
+          </select>
+        </div>
+
+        {/* Juegos de Mesa */}
+        <div className="flex flex-col gap-1 md:col-span-2">
+          <label className="text-sm font-medium flex items-center gap-2 text-gray-300">
+            <FaGamepad className="text-gray-400" />
+            Juegos de Mesa
+          </label>
+
+          <select
+            value={game}
+            onChange={(e) => setGame(e.target.value)}
+            className="p-2.5 bg-[#050607] border border-gray-800 rounded-lg w-full 
+            focus:ring-1 focus:ring-emerald-500"
+          >
+            <option value="">Selecciona un juego</option>
+            {availableGames.map((g) => (
+              <option key={g.id} value={g.id}>{g.name}</option>
+            ))}
+          </select>
+        </div>
+
       </div>
 
-      {/* NUEVO: Campo para Tipo de Pedido */}
-      <div>
-        <label htmlFor="orderType" className="block text-sm font-medium">
-          Tipo de Pedido
-        </label>
-        <select
-          id="orderType"
-          value={orderType}
-          onChange={(e) => setOrderType(e.target.value)}
-          className="w-full p-2 mt-1 bg-gray-900 border border-gray-700 rounded-md"
-        >
-          <option value="En mesa">En mesa</option>
-          <option value="Llevar">Llevar</option>
-          <option value="Mixto">Mixto</option>
-        </select>
-      </div>
-
-      <div>
-        <label htmlFor="game" className="block text-sm font-medium">
-          Juegos de Mesa
-        </label>
-        <select
-          id="game"
-          value={game}
-          onChange={(e) => setGame(e.target.value)}
-          className="w-full p-2 mt-1 bg-gray-900 border border-gray-700 rounded-md"
-        >
-          <option value="">Selecciona un juego</option>
-          {availableGames.map((g) => (
-            <option key={g.id} value={g.id}>
-              {g.name}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div>
-        <label htmlFor="generalObservation" className="block text-sm font-medium">
+      {/* Observaciones Generales */}
+      <div className="flex flex-col gap-1">
+        <label className="text-sm font-medium flex items-center gap-2 text-gray-300">
+          <FaStickyNote className="text-gray-400" />
           Observaciones Generales
         </label>
+
         <textarea
-          id="generalObservation"
           value={generalObservation}
           onChange={(e) => setGeneralObservation(e.target.value)}
-          className="w-full p-2 mt-1 bg-gray-900 border border-gray-700 rounded-md"
-          placeholder="Escribe aquí observaciones generales..."
+          placeholder="Instrucciones generales para cocina o servicio..."
+          className="p-3 bg-[#050607] border border-gray-800 rounded-lg w-full min-h-[90px] 
+          focus:ring-1 focus:ring-emerald-500"
         />
       </div>
-    </>
+
+    </div>
   );
 };
 
