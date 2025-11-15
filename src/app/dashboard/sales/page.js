@@ -153,7 +153,7 @@ const SalesForm = ({ saleId }) => {
   };
 
   return (
-    <form onSubmit={(e) => e.preventDefault()} className="bg-[#070A0D] text-slate-200 p-6 rounded-2xl shadow-xl space-y-6">
+    <form onSubmit={(e) => e.preventDefault()} className=" text-slate-200 rounded-2xl shadow-xl space-y-6">
       <header className="flex items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-extrabold"> {isEditing ? "Editar Venta" : "Nueva Venta"}</h2>

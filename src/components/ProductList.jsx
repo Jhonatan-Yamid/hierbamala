@@ -259,9 +259,9 @@ export default function ProductList({ products, setProducts, availableAdditions 
                               <div key={globalIndex} className="bg-gray-900 border border-gray-800 rounded-md p-3">
                                 <div className="flex items-center justify-between gap-3">
                                   <div className="flex items-center gap-3">
-                                    <div className="text-sm font-medium">Unidad #{i + 1}</div>
+                                    <div className="text-sm font-medium">#{i + 1}</div>
                                     <div className="text-xs text-gray-400">
-                                      {inst.observation ? inst.observation : "Sin observaciones"}
+                                      {inst.observation ? inst.observation : "Sin observacion"}
                                     </div>
 
                                     {inst.additions?.length > 0 && (
