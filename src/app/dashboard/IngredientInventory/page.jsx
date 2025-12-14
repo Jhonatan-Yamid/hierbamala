@@ -71,69 +71,101 @@ const IngredientInventory = () => {
   // =========================================================
   // AUTO EXPAND/COLLAPSE on search
   // =========================================================
-  useEffect(() => {
-    if (searchTerm.trim() === "") {
-      // Si borran → colapsar TODO
-      const allClosed = {};
-      Object.keys(groupedIngredients).forEach(
-        (origin) => (allClosed[origin] = true)
-      );
-      setCollapsed(allClosed);
-      return;
-    }
+useEffect(() => {
+  if (searchTerm.trim() === "") {
+    // 🔒 Colapsar todo
+    const allClosed = {};
+    Object.keys(groupedIngredients).forEach(
+      (origin) => (allClosed[origin] = true)
+    );
+    setCollapsed(allClosed);
+    return;
+  }
 
-    // Si escriben → abrir solo las categorías con resultados
-    const newState = {};
-    Object.keys(filteredGrouped).forEach((origin) => {
-      newState[origin] = filteredGrouped[origin].length === 0 ? true : false;
-    });
+  // 🔓 Expandir solo categorías con coincidencias
+  const expanded = {};
+  Object.keys(groupedIngredients).forEach((origin) => {
+    expanded[origin] = groupedIngredients[origin].some((ing) =>
+      ing.name.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+      ? false
+      : true;
+  });
 
-    setCollapsed(newState);
-  }, [searchTerm, filteredGrouped, groupedIngredients]);
+  setCollapsed(expanded);
+}, [searchTerm]);
+
 
   // =========================================================
   // HANDLE CHANGE & BLUR
   // =========================================================
-  const handleQuantityChange = (e, ingredientId) => {
-    const newValue = e.target.value;
+const handleQuantityChange = (e, ingredientId) => {
+  const newValue = e.target.value;
 
-    setIngredients((prev) =>
-      prev.map((ingredient) =>
+  setIngredients((prev) =>
+    prev.map((ingredient) =>
+      ingredient.id === ingredientId
+        ? { ...ingredient, quantity: newValue }
+        : ingredient
+    )
+  );
+
+  // 🔥 SINCRONIZA groupedIngredients
+  setGroupedIngredients((prev) => {
+    const updated = {};
+    Object.keys(prev).forEach((origin) => {
+      updated[origin] = prev[origin].map((ingredient) =>
         ingredient.id === ingredientId
           ? { ...ingredient, quantity: newValue }
           : ingredient
-      )
-    );
-
-    setModifiedFields((prev) => {
-      const updated = new Map(prev);
-      updated.set(ingredientId, true);
-      return updated;
+      );
     });
-  };
+    return updated;
+  });
 
-  const handleQuantityBlur = (e, ingredientId) => {
-    const finalValue = e.target.value.trim();
+  setModifiedFields((prev) => {
+    const updated = new Map(prev);
+    updated.set(ingredientId, true);
+    return updated;
+  });
+};
 
-    if (!/^(\d+(\.\d{0,2})?|Insuficiente)?$/.test(finalValue)) {
-      alert("Por favor, ingresa un valor válido (número o 'Insuficiente').");
-      return;
-    }
 
-    setIngredients((prev) =>
-      prev.map((ingredient) =>
+const handleQuantityBlur = (e, ingredientId) => {
+  const finalValue = e.target.value.trim();
+
+  if (!/^(\d+(\.\d{0,2})?|Insuficiente)?$/.test(finalValue)) {
+    alert("Por favor, ingresa un valor válido (número o 'Insuficiente').");
+    return;
+  }
+
+  const parsedValue =
+    finalValue === "Insuficiente"
+      ? null
+      : parseFloat(finalValue) || 0;
+
+  setIngredients((prev) =>
+    prev.map((ingredient) =>
+      ingredient.id === ingredientId
+        ? { ...ingredient, quantity: parsedValue }
+        : ingredient
+    )
+  );
+
+  // 🔥 SINCRONIZA groupedIngredients
+  setGroupedIngredients((prev) => {
+    const updated = {};
+    Object.keys(prev).forEach((origin) => {
+      updated[origin] = prev[origin].map((ingredient) =>
         ingredient.id === ingredientId
-          ? {
-              ...ingredient,
-              quantity:
-                finalValue === "Insuficiente"
-                  ? null
-                  : parseFloat(finalValue) || 0,
-            }
+          ? { ...ingredient, quantity: parsedValue }
           : ingredient
-      )
-    );
-  };
+      );
+    });
+    return updated;
+  });
+};
+
 
   // =========================================================
   // SUBMIT
