@@ -61,7 +61,7 @@ const IngredientInventory = () => {
 
     Object.keys(groupedIngredients).forEach((origin) => {
       result[origin] = groupedIngredients[origin].filter((ing) =>
-        ing.name.toLowerCase().includes(lower)
+        ing.name.toLowerCase().includes(lower),
       );
     });
 
@@ -71,101 +71,96 @@ const IngredientInventory = () => {
   // =========================================================
   // AUTO EXPAND/COLLAPSE on search
   // =========================================================
-useEffect(() => {
-  if (searchTerm.trim() === "") {
-    // 🔒 Colapsar todo
-    const allClosed = {};
-    Object.keys(groupedIngredients).forEach(
-      (origin) => (allClosed[origin] = true)
-    );
-    setCollapsed(allClosed);
-    return;
-  }
+  useEffect(() => {
+    if (searchTerm.trim() === "") {
+      // 🔒 Colapsar todo
+      const allClosed = {};
+      Object.keys(groupedIngredients).forEach(
+        (origin) => (allClosed[origin] = true),
+      );
+      setCollapsed(allClosed);
+      return;
+    }
 
-  // 🔓 Expandir solo categorías con coincidencias
-  const expanded = {};
-  Object.keys(groupedIngredients).forEach((origin) => {
-    expanded[origin] = groupedIngredients[origin].some((ing) =>
-      ing.name.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-      ? false
-      : true;
-  });
+    // 🔓 Expandir solo categorías con coincidencias
+    const expanded = {};
+    Object.keys(groupedIngredients).forEach((origin) => {
+      expanded[origin] = groupedIngredients[origin].some((ing) =>
+        ing.name.toLowerCase().includes(searchTerm.toLowerCase()),
+      )
+        ? false
+        : true;
+    });
 
-  setCollapsed(expanded);
-}, [searchTerm]);
-
+    setCollapsed(expanded);
+  }, [searchTerm]);
 
   // =========================================================
   // HANDLE CHANGE & BLUR
   // =========================================================
-const handleQuantityChange = (e, ingredientId) => {
-  const newValue = e.target.value;
+  const handleQuantityChange = (e, ingredientId) => {
+    const newValue = e.target.value;
 
-  setIngredients((prev) =>
-    prev.map((ingredient) =>
-      ingredient.id === ingredientId
-        ? { ...ingredient, quantity: newValue }
-        : ingredient
-    )
-  );
-
-  // 🔥 SINCRONIZA groupedIngredients
-  setGroupedIngredients((prev) => {
-    const updated = {};
-    Object.keys(prev).forEach((origin) => {
-      updated[origin] = prev[origin].map((ingredient) =>
+    setIngredients((prev) =>
+      prev.map((ingredient) =>
         ingredient.id === ingredientId
           ? { ...ingredient, quantity: newValue }
-          : ingredient
-      );
+          : ingredient,
+      ),
+    );
+
+    // 🔥 SINCRONIZA groupedIngredients
+    setGroupedIngredients((prev) => {
+      const updated = {};
+      Object.keys(prev).forEach((origin) => {
+        updated[origin] = prev[origin].map((ingredient) =>
+          ingredient.id === ingredientId
+            ? { ...ingredient, quantity: newValue }
+            : ingredient,
+        );
+      });
+      return updated;
     });
-    return updated;
-  });
 
-  setModifiedFields((prev) => {
-    const updated = new Map(prev);
-    updated.set(ingredientId, true);
-    return updated;
-  });
-};
+    setModifiedFields((prev) => {
+      const updated = new Map(prev);
+      updated.set(ingredientId, true);
+      return updated;
+    });
+  };
 
+  const handleQuantityBlur = (e, ingredientId) => {
+    const finalValue = e.target.value.trim();
 
-const handleQuantityBlur = (e, ingredientId) => {
-  const finalValue = e.target.value.trim();
+    if (!/^(\d+(\.\d{0,2})?|Insuficiente)?$/.test(finalValue)) {
+      alert("Por favor, ingresa un valor válido (número o 'Insuficiente').");
+      return;
+    }
 
-  if (!/^(\d+(\.\d{0,2})?|Insuficiente)?$/.test(finalValue)) {
-    alert("Por favor, ingresa un valor válido (número o 'Insuficiente').");
-    return;
-  }
+    const parsedValue =
+      finalValue === "Insuficiente" ? null : parseFloat(finalValue) || 0;
 
-  const parsedValue =
-    finalValue === "Insuficiente"
-      ? null
-      : parseFloat(finalValue) || 0;
-
-  setIngredients((prev) =>
-    prev.map((ingredient) =>
-      ingredient.id === ingredientId
-        ? { ...ingredient, quantity: parsedValue }
-        : ingredient
-    )
-  );
-
-  // 🔥 SINCRONIZA groupedIngredients
-  setGroupedIngredients((prev) => {
-    const updated = {};
-    Object.keys(prev).forEach((origin) => {
-      updated[origin] = prev[origin].map((ingredient) =>
+    setIngredients((prev) =>
+      prev.map((ingredient) =>
         ingredient.id === ingredientId
           ? { ...ingredient, quantity: parsedValue }
-          : ingredient
-      );
-    });
-    return updated;
-  });
-};
+          : ingredient,
+      ),
+    );
 
+    // 🔥 SINCRONIZA groupedIngredients
+    setGroupedIngredients((prev) => {
+      const updated = {};
+      Object.keys(prev).forEach((origin) => {
+        updated[origin] = prev[origin].map((ingredient) =>
+          ingredient.id === ingredientId
+            ? { ...ingredient, quantity: parsedValue }
+            : ingredient,
+        );
+      });
+      return updated;
+    });
+  };
 
   // =========================================================
   // SUBMIT
@@ -247,10 +242,10 @@ const handleQuantityBlur = (e, ingredientId) => {
 
               {/* COLLAPSABLE */}
               <div
-                className={`transition-all duration-300 overflow-hidden ${
+                className={`transition-all duration-300 ${
                   collapsed[origin]
-                    ? "max-h-0 opacity-0"
-                    : "max-h-[1500px] opacity-100"
+                    ? "max-h-0 overflow-hidden opacity-0"
+                    : "max-h-none opacity-100"
                 }`}
               >
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 py-2">
@@ -296,9 +291,7 @@ const handleQuantityBlur = (e, ingredientId) => {
                             onChange={(e) =>
                               handleQuantityChange(e, ingredient.id)
                             }
-                            onBlur={(e) =>
-                              handleQuantityBlur(e, ingredient.id)
-                            }
+                            onBlur={(e) => handleQuantityBlur(e, ingredient.id)}
                             className={`border p-2 rounded bg-gray-700 text-slate-200 ${
                               isModified ? "border-red-500" : "border-white"
                             }`}
