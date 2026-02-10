@@ -35,7 +35,7 @@ const TicketPreviewModal = ({
         <div className="flex justify-between items-center px-6 py-4 border-b border-gray-700">
           <div>
             <h2 className="text-xl font-bold text-white">
-              Vista previa de la comanda
+              Vista
             </h2>
             <p className="text-sm text-gray-400">
               Mesa {tableNumber || "-"} • {orderType}
