@@ -1,5 +1,6 @@
 "use client";
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useLayoutEffect, useRef } from "react";
+
 import {
   FaDrumstickBite,
   FaCoffee,
@@ -63,6 +64,8 @@ export default function ProductList({ products, setProducts, availableAdditions 
   const [openCategory, setOpenCategory] = useState(null);
   const [openInstanceIndex, setOpenInstanceIndex] = useState(null);
   const [additionSearch, setAdditionSearch] = useState({});
+  const additionInputRefs = useRef({});
+
 
   // agrupar availableProducts por categoría
   const groupedProducts = useMemo(() => {
@@ -183,6 +186,31 @@ export default function ProductList({ products, setProducts, availableAdditions 
     });
   };
 
+  // 1. Abrir categoría + instancia al agregar producto
+  useLayoutEffect(() => {
+    if (!products.length) return;
+
+    const lastIndex = products.length - 1;
+    const last = products[lastIndex];
+
+    const template = availableProducts.find(p => p.id === last.id);
+    const category = template?.category || "Otros";
+
+    setOpenCategory(category);
+    setOpenInstanceIndex(lastIndex);
+  }, [products.length, availableProducts]);
+
+  // 2. Focus cuando el input YA existe en el DOM
+  useLayoutEffect(() => {
+    if (openInstanceIndex === null) return;
+
+    const input = additionInputRefs.current[openInstanceIndex];
+    if (input) {
+      input.focus();
+    }
+  }, [openCategory, openInstanceIndex]);
+
+
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold">Productos Añadidos</h3>
@@ -296,7 +324,17 @@ export default function ProductList({ products, setProducts, availableAdditions 
 
                                     <div>
                                       <label className="text-xs text-gray-400">Agregar adición</label>
-                                      <input type="text" value={inst.additionSearchTerm || additionSearch[globalIndex] || ""} onChange={(e) => handleAdditionSearch(globalIndex, e.target.value)} placeholder="Buscar adición..." className="w-full mt-1 p-2 bg-[#050607] border border-gray-800 rounded-md text-sm" />
+                                      <input
+                                        ref={(el) => {
+                                          if (el) additionInputRefs.current[globalIndex] = el;
+                                        }}
+                                        type="text"
+                                        value={inst.additionSearchTerm || additionSearch[globalIndex] || ""}
+                                        onChange={(e) => handleAdditionSearch(globalIndex, e.target.value)}
+                                        placeholder="Buscar adición..."
+                                        className="w-full mt-1 p-2 bg-[#050607] border border-gray-800 rounded-md text-sm"
+                                      />
+
                                       {inst.additionSuggestions?.length > 0 && (
                                         <ul className="mt-2 bg-[#060708] border border-gray-800 rounded-md max-h-44 overflow-y-auto">
                                           {inst.additionSuggestions.map(add => (

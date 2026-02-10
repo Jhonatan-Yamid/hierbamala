@@ -12,14 +12,15 @@ const SaleInfoFields = ({
   setGeneralObservation,
   orderType,
   setOrderType,
+  tableInputRef, // 👈 NUEVO
 }) => {
   return (
     <div className="w-full bg-[#0b0f12] border border-gray-800 rounded-2xl p-4 md:p-6 space-y-6 shadow-sm">
 
-      {/* Encabezado opcional */}
-      <h3 className="text-lg font-semibold text-gray-100">Información del Pedido</h3>
+      <h3 className="text-lg font-semibold text-gray-100">
+        Información del Pedido
+      </h3>
 
-      {/* GRID PRINCIPAL */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
         {/* Número de Mesa */}
@@ -30,7 +31,7 @@ const SaleInfoFields = ({
           </label>
 
           <input
-            required
+            ref={tableInputRef}
             value={tableNumber}
             onChange={(e) => setTableNumber(e.target.value)}
             placeholder="Ej: 12"
@@ -58,7 +59,7 @@ const SaleInfoFields = ({
           </select>
         </div>
 
-        {/* Juegos de Mesa */}
+        {/* Juegos */}
         <div className="flex flex-col gap-1 md:col-span-2">
           <label className="text-sm font-medium flex items-center gap-2 text-gray-300">
             <FaGamepad className="text-gray-400" />
@@ -77,10 +78,9 @@ const SaleInfoFields = ({
             ))}
           </select>
         </div>
-
       </div>
 
-      {/* Observaciones Generales */}
+      {/* Observaciones */}
       <div className="flex flex-col gap-1">
         <label className="text-sm font-medium flex items-center gap-2 text-gray-300">
           <FaStickyNote className="text-gray-400" />
@@ -95,7 +95,6 @@ const SaleInfoFields = ({
           focus:ring-1 focus:ring-emerald-500"
         />
       </div>
-
     </div>
   );
 };

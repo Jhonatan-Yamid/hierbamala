@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import useSalesFormLogic from "@/hooks/useSalesFormLogic";
 import ProductSearch from "@/components/ProductSearch";
 import ProductList from "@/components/ProductList";
@@ -42,6 +42,8 @@ const SalesForm = ({ saleId }) => {
     setOrderType,
   } = useSalesFormLogic(saleId);
 
+  const tableInputRef = useRef(null);
+
   if (isLoading) {
     return (
       <div className="w-full flex flex-col items-center justify-center p-6">
@@ -53,10 +55,11 @@ const SalesForm = ({ saleId }) => {
 
   const handlePay = async () => {
     // Validación front: número de mesa obligatorio
-    if (!tableNumber || tableNumber.toString().trim() === "") {
-      setError("El número de mesa es obligatorio.");
-      // Scroll suave a top del formulario (si aplica)
-      window?.scrollTo?.({ top: 0, behavior: "smooth" });
+    if (!tableNumber || tableNumber.trim() === "") {
+      alert("Debes ingresar el número de mesa");
+
+      // enfocar mesa SOLO en este momento
+      tableInputRef.current?.focus();
       return;
     }
 
@@ -195,6 +198,7 @@ const SalesForm = ({ saleId }) => {
           setGeneralObservation={setGeneralObservation}
           orderType={orderType}
           setOrderType={setOrderType}
+          tableInputRef={tableInputRef} // 👈 PASAMOS EL REF
         />
 
         {error && <div className="text-red-400 text-sm rounded-md p-2 bg-red-900/20">{error}</div>}
@@ -230,11 +234,16 @@ const SalesForm = ({ saleId }) => {
 
       {showPreview && (
         <TicketPreviewModal
-          formatTicket={formatTicket}
+          products={products}
+          total={calculateTotal()}
+          tableNumber={tableNumber}
+          orderType={orderType}
+          generalObservation={generalObservation}
           onPrint={handlePrint}
           onShare={handleShare}
           onClose={() => setShowPreview(false)}
         />
+
       )}
     </form>
   );

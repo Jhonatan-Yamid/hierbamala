@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 /**
  * ProductSearch
@@ -7,6 +7,21 @@ import React from "react";
  * - devuelve sugerencias en una lista estilizada
  */
 const ProductSearch = ({ searchTerm, setSearchTerm, suggestions, setSuggestions, availableProducts, setProducts }) => {
+
+  const [beerStock, setBeerStock] = useState({});
+  useEffect(() => {
+    fetch("/api/products/search")
+      .then(res => res.json())
+      .then(data => {
+        const map = {};
+        data.forEach(b => {
+          map[b.id] = b.stock;
+        });
+        setBeerStock(map);
+      })
+      .catch(() => { });
+  }, []);
+
   const handleSearchChange = (e) => {
     const term = e.target.value;
     setSearchTerm(term);
@@ -43,12 +58,35 @@ const ProductSearch = ({ searchTerm, setSearchTerm, suggestions, setSuggestions,
         {suggestions.length > 0 && (
           <ul className="absolute z-30 left-0 right-0 mt-2 bg-[#040506] border border-gray-800 rounded-xl shadow-xl max-h-56 overflow-y-auto">
             {suggestions.map(product => (
-              <li key={product.id} onClick={() => addProduct(product)} className="p-3 hover:bg-gray-900 cursor-pointer flex justify-between items-center">
+              <li
+                key={product.id}
+                onClick={() => addProduct(product)}
+                className="p-3 hover:bg-gray-900 cursor-pointer flex justify-between items-center"
+              >
                 <div>
                   <div className="font-medium">{product.name}</div>
-                  <div className="text-xs text-gray-400">{product.category || "Sin categoría"}</div>
+                  <div className="text-xs text-gray-400">
+                    {product.category || "Sin categoría"}
+                    {beerStock[product.id] !== undefined && (
+                      <span
+                        className={`ml-2 ${beerStock[product.id] > 0
+                            ? "text-emerald-400"
+                            : "text-red-400"
+                          }`}
+                      >
+                        • Stock: {beerStock[product.id]}
+                      </span>
+                    )}
+
+                  </div>
                 </div>
-                <div className="text-sm text-gray-300">{new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP" }).format(product.price)}</div>
+
+                <div className="text-sm text-gray-300">
+                  {new Intl.NumberFormat("es-CL", {
+                    style: "currency",
+                    currency: "CLP",
+                  }).format(product.price)}
+                </div>
               </li>
             ))}
           </ul>

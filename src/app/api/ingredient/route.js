@@ -21,6 +21,7 @@ export async function POST(request) {
         quantity: data.quantity === "insuficiente" ? null : parseFloat(data.quantity),
         price: parseFloat(data.price),
         typeUnity: data.typeUnity,
+        Origin: data.Origin,
       },
     });
 
@@ -43,6 +44,7 @@ export async function PUT(request) {
         quantity,
         price,
         typeUnity,
+        Origin,
       } = data;
 
       if (!id || typeof id !== "number") {
@@ -61,6 +63,7 @@ export async function PUT(request) {
           price: parseFloat(price),
           typeUnity,
           updatedAt: new Date(),
+          Origin
         },
       });
 
