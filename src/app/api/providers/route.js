@@ -41,17 +41,26 @@ export async function POST(request) {
 
 export async function PUT(request) {
   try {
-    const { id, ...updatedData } = await request.json();
-    if (!id) {
+    const body = await request.json();
+    const id = parseInt(body.id);
+
+    if (!id || isNaN(id)) {
       return NextResponse.json(
         { message: "El ID es requerido para actualizar un proveedor" },
         { status: 400 }
       );
     }
+
     const updatedProvider = await db.provider.update({
       where: { id },
-      data: updatedData,
+      data: {
+        name: body.name,
+        description: body.description,
+        accountNumber: body.accountNumber,
+        phone: body.phone || null,
+      },
     });
+
     return NextResponse.json(updatedProvider, { status: 200 });
   } catch (error) {
     console.error("Error al actualizar proveedor:", error);
@@ -61,6 +70,7 @@ export async function PUT(request) {
     );
   }
 }
+
 
 export async function DELETE(request) {
   try {

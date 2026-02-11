@@ -80,6 +80,7 @@ model Provider {
   updatedAt     DateTime @updatedAt
 
   ingredients   Ingredient[]   // 👈 relación inversa
+  movements ProviderMovement[]
 }
 
 model Sale {
@@ -145,4 +146,22 @@ model Utils {
   id         Int      @id @default(autoincrement())
   ipv4       String
   created_at DateTime @updatedAt
+}
+
+model ProviderMovement {
+  id          Int       @id @default(autoincrement())
+  provider    Provider  @relation(fields: [providerId], references: [id])
+  providerId  Int
+
+  type        MovementType
+  amount      Float
+  description String?
+  imageUrl    String?
+
+  createdAt   DateTime  @default(now())
+}
+
+enum MovementType {
+  INVOICE   // Factura (entra deuda → saldo sube)
+  PAYMENT   // Pago (sale dinero → saldo baja)
 }
