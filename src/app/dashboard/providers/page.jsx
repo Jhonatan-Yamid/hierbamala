@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { FaCopy, FaPrint, FaShoppingCart } from "react-icons/fa";
 
 const ProviderForm = () => {
   const [providers, setProviders] = useState([]);
@@ -9,12 +10,49 @@ const ProviderForm = () => {
     name: "",
     description: "",
     accountNumber: "",
+    phone: "", // 
   });
 
   const [isEditing, setIsEditing] = useState(false);
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredProviders, setFilteredProviders] = useState([]);
+  const [selectedProvider, setSelectedProvider] = useState(null);
+const [orderItems, setOrderItems] = useState({});
+
+const openOrderModal = (provider) => {
+  setSelectedProvider(provider);
+  setOrderItems({});
+};
+
+const sendOrder = () => {
+  if (!selectedProvider.phone) {
+    alert("Este proveedor no tiene número registrado");
+    return;
+  }
+
+  const items = Object.values(orderItems)
+    .filter(item => item.quantity && item.quantity > 0);
+
+  if (items.length === 0) {
+    alert("Selecciona al menos un ingrediente con cantidad");
+    return;
+  }
+
+  let message = `Hola ${selectedProvider.name}, Pedido:\n\n`;
+
+  items.forEach(item => {
+    message += `• ${item.quantity} - ${item.name}\n`;
+  });
+
+  message += `\nGracias.`;
+
+  const encoded = encodeURIComponent(message);
+  const url = `https://wa.me/${selectedProvider.phone}?text=${encoded}`;
+
+  window.open(url, "_blank");
+};
+
 
   // Fetch providers on mount
   useEffect(() => {
@@ -68,15 +106,15 @@ const ProviderForm = () => {
         setProviders((prev) =>
           isEditing
             ? prev.map((p) =>
-                p.id === updatedProvider.id ? updatedProvider : p
-              )
+              p.id === updatedProvider.id ? updatedProvider : p
+            )
             : [...prev, updatedProvider]
         );
         setFilteredProviders((prev) =>
           isEditing
             ? prev.map((p) =>
-                p.id === updatedProvider.id ? updatedProvider : p
-              )
+              p.id === updatedProvider.id ? updatedProvider : p
+            )
             : [...prev, updatedProvider]
         );
         setFormData({ id: null, name: "", description: "", accountNumber: "" });
@@ -133,7 +171,7 @@ const ProviderForm = () => {
       {/* Botón para mostrar/ocultar el formulario */}
       <button
         onClick={() => setIsFormVisible(!isFormVisible)}
-        className="mb-4 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+        className="mb-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-lg flex items-center gap-2"
       >
         {isFormVisible ? "Cancelar" : "Agregar Nuevo"}
       </button>
@@ -174,6 +212,14 @@ const ProviderForm = () => {
               required
               className="p-2 rounded border border-gray-700 bg-gray-800 text-white"
             />
+            <input
+              type="text"
+              name="phone"
+              value={formData.phone}
+              onChange={handleChange}
+              placeholder="Celular (Ej: 573001234567)"
+              className="p-2 rounded border border-gray-700 bg-gray-800 text-white"
+            />
           </div>
           <button
             type="submit"
@@ -183,6 +229,79 @@ const ProviderForm = () => {
           </button>
         </form>
       )}
+
+      {selectedProvider && (
+  <div className="text-white fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+    <div className="bg-gray-900 p-6 rounded-xl w-full max-w-lg">
+      <h2 className="text-xl font-bold mb-4">
+        Pedido a {selectedProvider.name}
+      </h2>
+
+      <div className="space-y-3 max-h-80 overflow-y-auto">
+        {selectedProvider.ingredients.map((ing) => (
+          <div key={ing.id} className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              onChange={(e) => {
+                if (e.target.checked) {
+                  setOrderItems(prev => ({
+                    ...prev,
+                    [ing.id]: { quantity: "", name: ing.name }
+                  }));
+                } else {
+                  const copy = { ...orderItems };
+                  delete copy[ing.id];
+                  setOrderItems(copy);
+                }
+              }}
+            />
+
+            <div className="flex-1">
+              <div>{ing.name}</div>
+              <div className="text-xs text-gray-400">
+                Stock actual: {ing.quantity ?? "Insuficiente"}
+              </div>
+            </div>
+
+            {orderItems[ing.id] && (
+              <input
+                type="number"
+                placeholder="Cantidad"
+                className="w-20 p-1 rounded bg-gray-800"
+                onChange={(e) =>
+                  setOrderItems(prev => ({
+                    ...prev,
+                    [ing.id]: {
+                      ...prev[ing.id],
+                      quantity: e.target.value
+                    }
+                  }))
+                }
+              />
+            )}
+          </div>
+        ))}
+      </div>
+
+      <div className="flex justify-between mt-6">
+        <button
+          onClick={() => setSelectedProvider(null)}
+          className="bg-gray-700 px-4 py-2 rounded"
+        >
+          Cancelar
+        </button>
+
+        <button
+          onClick={sendOrder}
+          className="bg-green-500 px-4 py-2 rounded text-black font-semibold"
+        >
+          Enviar Pedido
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
 
       {/* Buscador */}
       <input
@@ -217,10 +336,19 @@ const ProviderForm = () => {
             </p>
             <button
               onClick={() => handleCopy(provider.accountNumber)}
-              className="mt-2 bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
+              className="mt-2 bg-gray-900 text-gray-200 text-white hover:bg-gray-600 hover:text-white font-semibold px-4 py-2 rounded-lg flex items-center gap-2"
             >
-              Copiar Número de Cuenta
+              <FaCopy />Copiar Número de Cuenta
             </button>
+            {provider.ingredients?.length > 0 && (
+              <button
+                onClick={() => openOrderModal(provider)}
+                className="mt-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-lg flex items-center gap-2"
+              >
+                <FaShoppingCart /> Realizar Pedido
+              </button>
+            )}
+
           </div>
         ))}
       </div>
