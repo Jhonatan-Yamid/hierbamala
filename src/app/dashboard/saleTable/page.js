@@ -1,5 +1,6 @@
 // components/DailySales.js
 "use client";
+import useTicketPrinter from "@/hooks/useTicketPrinter";
 import { useState, useEffect, useCallback } from "react";
 import { FaCashRegister, FaEdit, FaEye, FaTrashAlt } from "react-icons/fa";
 import { IoClose } from "react-icons/io5";
@@ -7,6 +8,7 @@ import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 
 function DailySales() {
+    const { printTicket } = useTicketPrinter();
     const { data: session } = useSession();
     const [subTab, setSubTab] = useState("pendientes");
     const [sales, setSales] = useState([]);
@@ -251,17 +253,15 @@ function DailySales() {
             <div className="flex space-x-4 mb-6">
                 <button
                     onClick={() => setActiveTab("today")}
-                    className={`px-4 py-2 rounded-t-md ${
-                        activeTab === "today" ? "bg-gray-800 text-white" : "bg-gray-600 text-gray-300"
-                    }`}
+                    className={`px-4 py-2 rounded-t-md ${activeTab === "today" ? "bg-gray-800 text-white" : "bg-gray-600 text-gray-300"
+                        }`}
                 >
                     Ventas de Hoy
                 </button>
                 <button
                     onClick={() => setActiveTab("past")}
-                    className={`px-4 py-2 rounded-t-md ${
-                        activeTab === "past" ? "bg-gray-800 text-white" : "bg-gray-600 text-gray-300"
-                    }`}
+                    className={`px-4 py-2 rounded-t-md ${activeTab === "past" ? "bg-gray-800 text-white" : "bg-gray-600 text-gray-300"
+                        }`}
                 >
                     Ventas Anteriores
                 </button>
@@ -272,31 +272,28 @@ function DailySales() {
                     <div className="flex space-x-3 mb-4">
                         <button
                             onClick={() => setSubTab("todas")}
-                            className={`px-3 py-1 rounded-full text-sm ${
-                                subTab === "todas"
+                            className={`px-3 py-1 rounded-full text-sm ${subTab === "todas"
                                     ? "bg-green-700 text-white"
                                     : "bg-gray-600 text-gray-200"
-                            }`}
+                                }`}
                         >
                             Todas
                         </button>
                         <button
                             onClick={() => setSubTab("pendientes")}
-                            className={`px-3 py-1 rounded-full text-sm ${
-                                subTab === "pendientes"
+                            className={`px-3 py-1 rounded-full text-sm ${subTab === "pendientes"
                                     ? "bg-yellow-700 text-white"
                                     : "bg-gray-600 text-gray-200"
-                            }`}
+                                }`}
                         >
                             En proceso / En mesa
                         </button>
                         <button
                             onClick={() => setSubTab("pagadas")}
-                            className={`px-3 py-1 rounded-full text-sm ${
-                                subTab === "pagadas"
+                            className={`px-3 py-1 rounded-full text-sm ${subTab === "pagadas"
                                     ? "bg-blue-700 text-white"
                                     : "bg-gray-600 text-gray-200"
-                            }`}
+                                }`}
                         >
                             Pagadas
                         </button>
@@ -341,7 +338,7 @@ function DailySales() {
                                             g.name === p.name &&
                                             g.observation === p.observation &&
                                             JSON.stringify(g.additions) ===
-                                                JSON.stringify(p.additions)
+                                            JSON.stringify(p.additions)
                                     );
                                     if (existing) existing.quantity += p.quantity;
                                     else grouped.push({ ...p });
@@ -437,23 +434,24 @@ function DailySales() {
                                         {["en proceso", "en mesa"].includes(
                                             sales.find((s) => s.id === selectedSaleId)?.status
                                         ) && (
-                                            <button
-                                                onClick={() =>
-                                                    handleStatusAdvance(
-                                                        sales.find(
-                                                            (s) => s.id === selectedSaleId
+                                                <button
+                                                    onClick={() =>
+                                                        handleStatusAdvance(
+                                                            sales.find(
+                                                                (s) => s.id === selectedSaleId
+                                                            )
                                                         )
-                                                    )
-                                                }
-                                                className="bg-emerald-700 hover:bg-emerald-600 text-white font-semibold px-4 py-2 rounded-lg shadow-md"
-                                            >
-                                                {sales.find(
-                                                    (s) => s.id === selectedSaleId
-                                                )?.status === "en proceso"
-                                                    ? "Orden lista"
-                                                    : "Marcar como pagada"}
-                                            </button>
-                                        )}
+                                                    }
+                                                    className="bg-emerald-700 hover:bg-emerald-600 text-white font-semibold px-4 py-2 rounded-lg shadow-md"
+                                                >
+                                                    {sales.find(
+                                                        (s) => s.id === selectedSaleId
+                                                    )?.status === "en proceso"
+                                                        ? "Orden lista"
+                                                        : "Marcar como pagada"}
+                                                </button>
+                                            )}
+
                                     </div>
 
                                     <div className="flex flex-col mt-2">
@@ -492,6 +490,24 @@ function DailySales() {
                                                     </p>
                                                 )}
                                             </div>
+                                                                                    <button
+                                            onClick={() =>
+                                                printTicket({
+                                                    products: selectedProducts,
+                                                    total: subtotal,
+                                                    tableNumber: sales.find((s) => s.id === selectedSaleId)?.table,
+                                                    game: sales.find((s) => s.id === selectedSaleId)?.gameId?.toString(),
+                                                    availableGames: [], // si quieres también puedes cargarlos
+                                                    generalObservation:
+                                                        sales.find((s) => s.id === selectedSaleId)?.generalObservation,
+                                                    orderType:
+                                                        sales.find((s) => s.id === selectedSaleId)?.orderType,
+                                                })
+                                            }
+                                            className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-4 py-2 rounded-lg shadow-md"
+                                        >
+                                            🖨️ Imprimir
+                                        </button>
                                         </div>
                                     </div>
                                 </div>

@@ -6,6 +6,8 @@ import ProductSearch from "@/components/ProductSearch";
 import ProductList from "@/components/ProductList";
 import SaleInfoFields from "@/components/SaleInfoFields";
 import TicketPreviewModal from "@/components/TicketPreviewModal";
+import useTicketPrinter from "@/hooks/useTicketPrinter";
+
 
 const SalesForm = ({ saleId }) => {
   const [shouldPrint, setShouldPrint] = useState(false);
@@ -35,13 +37,10 @@ const SalesForm = ({ saleId }) => {
     availableGames,
     calculateTotal,
     formatTicket,
-    setIpPrint,
-    ipPrint,
-    // NUEVO: orderType y setOrderType
     orderType,
     setOrderType,
   } = useSalesFormLogic(saleId);
-
+const { printTicket } = useTicketPrinter();
   const tableInputRef = useRef(null);
 
   if (isLoading) {
@@ -96,7 +95,15 @@ const SalesForm = ({ saleId }) => {
         // limpiar error y mostrar preview
         setError(null);
         if (shouldPrint) {
-          await handlePrint();
+          await printTicket({
+            products,
+            total: calculateTotal(),
+            tableNumber,
+            game,
+            availableGames,
+            generalObservation,
+            orderType,
+          });
         }
         setShowPreview(true);
       } else {
@@ -106,46 +113,6 @@ const SalesForm = ({ saleId }) => {
     } catch (err) {
       console.error("Error de conexión:", err);
       setError("Hubo un error al conectar con el servidor.");
-    }
-  };
-
-  const handlePrint = async () => {
-    const formattedProducts = products.map((p) => ({
-      name: p.name,
-      quantity: p.quantity,
-      price: p.price,
-      observation: p.observation,
-      additions: p.additions || [],
-    }));
-
-    const requestBody = {
-      products: formattedProducts,
-      total: calculateTotal(),
-      tableNumber: tableNumber || 0,
-      availableGames: game
-        ? [availableGames.find((g) => g.id.toString() === game)?.name || "Sin juego"]
-        : [],
-      generalObservation: generalObservation,
-      orderType: orderType,
-    };
-
-    const printUrl = `${ipPrint.ip}/print`;
-
-    try {
-      const res = await fetch(printUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requestBody),
-      });
-      const data = await res.json();
-      if (data.success) {
-        alert("Ticket enviado a la impresora");
-      } else {
-        alert("Error al imprimir: " + (data.message || "Error desconocido"));
-      }
-    } catch (err) {
-      console.error("Error al imprimir:", err);
-      alert("Error al conectar con el servicio de impresión: " + err.message);
     }
   };
 
@@ -239,7 +206,17 @@ const SalesForm = ({ saleId }) => {
           tableNumber={tableNumber}
           orderType={orderType}
           generalObservation={generalObservation}
-          onPrint={handlePrint}
+          onPrint={() =>
+            printTicket({
+              products,
+              total: calculateTotal(),
+              tableNumber,
+              game,
+              availableGames,
+              generalObservation,
+              orderType,
+            })
+          }
           onShare={handleShare}
           onClose={() => setShowPreview(false)}
         />

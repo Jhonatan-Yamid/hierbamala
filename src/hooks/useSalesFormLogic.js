@@ -16,7 +16,6 @@ const useSalesFormLogic = (saleId) => {
   const [showPreview, setShowPreview] = useState(false);
   const [availableProducts, setAvailableProducts] = useState([]);
   const [availableGames, setAvailableGames] = useState([]);
-  const [ipPrint, setIpPrint] = useState({ ip: '' });
   const [availableFetchedAdditions, setAvailableFetchedAdditions] = useState([]);
   // NUEVO: Estado para orderType
   const [orderType, setOrderType] = useState("En mesa"); // Default a "En mesa"
@@ -32,12 +31,6 @@ const useSalesFormLogic = (saleId) => {
       const productsData = await productsRes.json();
       if (!Array.isArray(productsData)) throw new Error('Formato de productos inválido');
       setAvailableProducts(productsData);
-
-      // 2. Cargar IP de impresora
-      const ipRes = await fetch('/api/print-ip');
-      if (!ipRes.ok) throw new Error('Error cargando IP');
-      const ipData = await ipRes.json();
-      setIpPrint({ ip: ipData.ip || '' });
 
       // 3. Cargar Juegos de Mesa desde la API
       const gamesRes = await fetch('/api/game');
@@ -166,8 +159,6 @@ const useSalesFormLogic = (saleId) => {
     availableGames,
     calculateTotal,
     formatTicket,
-    ipPrint,
-    // NUEVO: Exportar orderType y setOrderType
     orderType,
     setOrderType,
   };
