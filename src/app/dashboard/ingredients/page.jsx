@@ -8,6 +8,13 @@ function IngredientTable() {
   const [editingIngredient, setEditingIngredient] = useState(null);
   const [isNewIngredient, setIsNewIngredient] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [providers, setProviders] = useState([]);
+
+  useEffect(() => {
+  fetch("/api/providers")
+    .then(res => res.json())
+    .then(data => setProviders(data));
+}, []);
 
   useEffect(() => {
     fetch("/api/ingredient")
@@ -123,6 +130,7 @@ function IngredientTable() {
               : handleEditFormSubmit
           }
           isNewIngredient={isNewIngredient}
+          providers={providers}
         />
       )}
 

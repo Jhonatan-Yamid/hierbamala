@@ -22,6 +22,8 @@ export async function POST(request) {
         price: parseFloat(data.price),
         typeUnity: data.typeUnity,
         Origin: data.Origin,
+        providerId: data.providerId ? Number(data.providerId) : null, // 👈 NUEVO
+
       },
     });
 
@@ -45,6 +47,7 @@ export async function PUT(request) {
         price,
         typeUnity,
         Origin,
+        providerId,
       } = data;
 
       if (!id || typeof id !== "number") {
@@ -63,7 +66,8 @@ export async function PUT(request) {
           price: parseFloat(price),
           typeUnity,
           updatedAt: new Date(),
-          Origin
+          Origin,
+          providerId: providerId ? Number(providerId) : null,
         },
       });
 

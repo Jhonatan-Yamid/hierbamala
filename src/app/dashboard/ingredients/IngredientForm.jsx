@@ -13,7 +13,7 @@ const ORIGINS = [
   "Verdura",
 ];
 
-function IngredientForm({ ingredient, onSubmit, isNewIngredient }) {
+function IngredientForm({ ingredient, onSubmit, isNewIngredient, providers = [] }) {
 
   const normalizeOrigin = (value) => {
     if (!value) return "Desconocido";
@@ -32,6 +32,7 @@ function IngredientForm({ ingredient, onSubmit, isNewIngredient }) {
       price: 0,
       typeUnity: "",
       Origin: "Desconocido",
+      providerId: "",
     }
     : {
       id: ingredient?.id || null,
@@ -41,6 +42,7 @@ function IngredientForm({ ingredient, onSubmit, isNewIngredient }) {
       price: ingredient.price,
       typeUnity: ingredient.typeUnity,
       Origin: normalizeOrigin(ingredient.Origin),
+      providerId: ingredient.providerId || "",
     };
 
 
@@ -56,10 +58,16 @@ function IngredientForm({ ingredient, onSubmit, isNewIngredient }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(formData);
+     const formattedData = {
+    ...formData,
+    providerId: formData.providerId
+      ? Number(formData.providerId)
+      : null,
+  };
+    onSubmit(formattedData);
   };
 
-  
+
 
 
   return (
@@ -126,6 +134,29 @@ function IngredientForm({ ingredient, onSubmit, isNewIngredient }) {
             ))}
           </select>
         </div>
+
+
+        {/* PROVEEDOR */}
+        <div>
+          <label className="block mb-1 text-sm font-medium text-gray-300">
+            Proveedor
+          </label>
+
+          <select
+            name="providerId"
+            value={formData.providerId}
+            onChange={handleChange}
+            className="w-full p-3 rounded-lg bg-gray-800 text-white outline-none"
+          >
+            <option value="">Sin proveedor</option>
+            {providers.map((provider) => (
+              <option key={provider.id} value={provider.id}>
+                {provider.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
 
 
         {/* Cantidad */}

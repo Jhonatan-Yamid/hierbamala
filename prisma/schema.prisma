@@ -10,45 +10,52 @@ datasource db {
 }
 
 model Alert {
-  id          Int      @id @default(autoincrement())
-  title       String
-  description String
-  alertTime   DateTime
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt // Ajustado
-  repeatDay   Int?
-  repeatWeekly Boolean @default(false)
+  id           Int      @id @default(autoincrement())
+  title        String
+  description  String
+  alertTime    DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  repeatDay    Int?
+  repeatWeekly Boolean  @default(false)
 }
 
 model Game {
   id    Int    @id @default(autoincrement())
   name  String @unique
-  sales Sale[] // Ajustado
+  sales Sale[]
 }
 
 model Ingredient {
-  id          Int               @id @default(autoincrement())
+  id          Int                 @id @default(autoincrement())
   name        String
   description String?
   price       Int
   quantity    Float?
   typeUnity   String
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt // Ajustado
-  Origin      String            @default("Desconocido")
-  products    ProductIngredient[] // Ajustado
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  Origin      String              @default("Desconocido")
+
+  providerId  Int?                // 👈 nuevo campo
+  provider    Provider?           @relation(fields: [providerId], references: [id])
+
+  products    ProductIngredient[]
+
+  @@index([providerId])
 }
 
 model Product {
-  id          Int               @id @default(autoincrement())
+  id          Int                 @id @default(autoincrement())
   name        String
-  description String?           @db.Text
+  description String?             @db.Text
   price       Float
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt // Ajustado
-  category    String            @default("Desconocida")
-  ingredients ProductIngredient[] // Ajustado
-  sales       SaleProduct[]     // Ajustado
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  category    String              @default("Desconocida")
+  rappi_price Float?
+  ingredients ProductIngredient[]
+  sales       SaleProduct[]
 }
 
 model ProductIngredient {
@@ -56,8 +63,8 @@ model ProductIngredient {
   ingredientId Int
   quantity     Int
   createdAt    DateTime   @default(now())
-  ingredient   Ingredient @relation(fields: [ingredientId], references: [id]) // Ajustado
-  product      Product    @relation(fields: [productId], references: [id])    // Ajustado
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+  product      Product    @relation(fields: [productId], references: [id])
 
   @@id([productId, ingredientId])
   @@index([ingredientId], map: "ProductIngredient_ingredientId_fkey")
@@ -68,48 +75,51 @@ model Provider {
   name          String
   description   String?
   accountNumber String
+  phone         String?
   createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt // Ajustado
+  updatedAt     DateTime @updatedAt
+
+  ingredients   Ingredient[]   // 👈 relación inversa
 }
 
 model Sale {
-  id                 Int         @id @default(autoincrement())
+  id                 Int           @id @default(autoincrement())
   totalAmount        Float
-  createdAt          DateTime    @default(now())
-  updatedAt          DateTime    @updatedAt // Ajustado
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
   status             String
   table              String
   generalObservation String?
   gameId             Int?
-  orderType          String      @default("En mesa")
-  game               Game?       @relation(fields: [gameId], references: [id]) // Ajustado
-  products           SaleProduct[] // Ajustado
+  orderType          String        @default("En mesa")
+  user               String        @default("Administrador")
+  game               Game?         @relation(fields: [gameId], references: [id])
+  products           SaleProduct[]
 
   @@index([gameId], map: "Sale_gameId_fkey")
 }
 
 model SaleProduct {
-  id            String            @id @default(cuid()) // Ajustado
-  saleId        Int
-  productId     Int
-  quantity      Int
-  observation   String?           // Confirmado
+  id          String                @id @default(cuid())
+  saleId      Int
+  productId   Int
+  quantity    Int
+  observation String?
+  product     Product               @relation(fields: [productId], references: [id])
+  sale        Sale                  @relation(fields: [saleId], references: [id])
+  additions   SaleProductAddition[]
 
-  additions     SaleProductAddition[]
-
-  product       Product           @relation(fields: [productId], references: [id]) // Ajustado
-  sale          Sale              @relation(fields: [saleId], references: [id])    // Ajustado
-
-  // Las líneas @@index con "_temp_" fueron eliminadas aquí
+  @@index([productId], map: "SaleProduct_productId_fkey")
+  @@index([saleId], map: "SaleProduct_saleId_fkey")
 }
 
 model SaleProductAddition {
-  id          Int         @id @default(autoincrement())
+  id            Int         @id @default(autoincrement())
   saleProductId String
-  name        String
-  price       Float
-  additionId  Int?
-  saleProduct SaleProduct @relation(fields: [saleProductId], references: [id]) // Ajustado
+  name          String
+  price         Float
+  additionId    Int?
+  saleProduct   SaleProduct @relation(fields: [saleProductId], references: [id])
 
   @@index([saleProductId])
 }
@@ -118,7 +128,7 @@ model Subscription {
   id             Int       @id @default(autoincrement())
   endpoint       String    @unique
   expirationTime DateTime?
-  keys           Json      // Ajustado
+  keys           String    @db.LongText
 }
 
 model User {
@@ -127,12 +137,12 @@ model User {
   username  String   @unique
   password  String
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt // Ajustado
+  updatedAt DateTime @updatedAt
   role      Int?
 }
 
 model Utils {
   id         Int      @id @default(autoincrement())
   ipv4       String
-  created_at DateTime @updatedAt // Ajustado
+  created_at DateTime @updatedAt
 }

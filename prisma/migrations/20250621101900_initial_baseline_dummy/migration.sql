@@ -1,1 +1,0 @@
--- This is a dummy initial migration for baselining. No SQL changes required as DB is already synced.
