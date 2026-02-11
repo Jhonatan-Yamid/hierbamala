@@ -6,6 +6,7 @@ import { FaCashRegister, FaEdit, FaEye, FaTrashAlt } from "react-icons/fa";
 import { IoClose } from "react-icons/io5";
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
+import { FaPrint} from "react-icons/fa";
 
 function DailySales() {
     const { printTicket } = useTicketPrinter();
@@ -504,9 +505,9 @@ function DailySales() {
                                                         sales.find((s) => s.id === selectedSaleId)?.orderType,
                                                 })
                                             }
-                                            className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-4 py-2 rounded-lg shadow-md"
+                                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-lg flex items-center gap-2"
                                         >
-                                            🖨️ Imprimir
+                                           <FaPrint /> Imprimir
                                         </button>
                                         </div>
                                     </div>
