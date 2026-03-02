@@ -25,56 +25,59 @@ export default function SalesDailyPage() {
     const [loading, setLoading] = useState(true);
     const [range, setRange] = useState("30");
     const [movingAvgDays, setMovingAvgDays] = useState(7);
+    const [selectedDay, setSelectedDay] = useState(null);
+    const [showModal, setShowModal] = useState(false);
 
-useEffect(() => {
-  async function fetchDailySales() {
-    try {
-      setLoading(true);
-      const res = await fetch(`/api/sale/daily?days=${range}`);
-      const data = await res.json();
 
-      if (!data || !Array.isArray(data)) {
-        console.error("Error: formato inesperado en datos", data);
-        setDailySales([]);
-        setLoading(false);
-        return;
-      }
+    useEffect(() => {
+        async function fetchDailySales() {
+            try {
+                setLoading(true);
+                const res = await fetch(`/api/sale/daily?days=${range}`);
+                const data = await res.json();
 
-      // Procesar datos
-      let processed = data.map((d) => {
-        const [year, month, day] = d.date.split("-").map(Number);
-        const dateObj = new Date(year, month - 1, day);
+                if (!data || !Array.isArray(data)) {
+                    console.error("Error: formato inesperado en datos", data);
+                    setDailySales([]);
+                    setLoading(false);
+                    return;
+                }
 
-        return {
-          ...d,
-          dateObj,
-          dateLabel: dateObj.toLocaleDateString("es-CO", {
-            weekday: "long",
-            day: "2-digit",
-            month: "short",
-          }),
-          dayOfWeek: translateDay(d.dayOfWeek),
-        };
-      });
+                // Procesar datos
+                let processed = data.map((d) => {
+                    const [year, month, day] = d.date.split("-").map(Number);
+                    const dateObj = new Date(year, month - 1, day);
 
-      // Orden descendente
-      processed = processed.sort((a, b) => b.dateObj - a.dateObj);
+                    return {
+                        ...d,
+                        dateObj,
+                        dateLabel: dateObj.toLocaleDateString("es-CO", {
+                            weekday: "long",
+                            day: "2-digit",
+                            month: "short",
+                        }),
+                        dayOfWeek: translateDay(d.dayOfWeek),
+                    };
+                });
 
-      // Calcular promedios y variaciones
-      processed = calculateMovingAverage(processed, movingAvgDays);
-      processed = calculateVariation(processed);
+                // Orden descendente
+                processed = processed.sort((a, b) => b.dateObj - a.dateObj);
 
-      setDailySales(processed);
-      setLoading(false);
-    } catch (error) {
-      console.error("Error cargando ventas:", error);
-      setDailySales([]);
-      setLoading(false);
-    }
-  }
+                // Calcular promedios y variaciones
+                processed = calculateMovingAverage(processed, movingAvgDays);
+                processed = calculateVariation(processed);
 
-  fetchDailySales();
-}, [range, movingAvgDays]);
+                setDailySales(processed);
+                setLoading(false);
+            } catch (error) {
+                console.error("Error cargando ventas:", error);
+                setDailySales([]);
+                setLoading(false);
+            }
+        }
+
+        fetchDailySales();
+    }, [range, movingAvgDays]);
 
 
     // --- Resumen ---
@@ -84,6 +87,16 @@ useEffect(() => {
         const average = total / dailySales.length;
         return { total, average };
     }, [dailySales]);
+
+    function calculatePockets(total) {
+        return {
+            operacion: total * 0.65,
+            arriendo: total * 0.15,
+            deuda: total * 0.10,
+            emergencia: total * 0.05,
+            socios: total * 0.05,
+        };
+    }
 
     // --- Colores dinámicos ---
     const movingAvgColor =
@@ -263,6 +276,10 @@ useEffect(() => {
                                 {dailySales.map((item, i) => (
                                     <tr
                                         key={i}
+                                        onClick={() => {
+                                            setSelectedDay(item);
+                                            setShowModal(true);
+                                        }}
                                         className={`border-b border-gray-800 hover:bg-gray-800/40 transition`}
                                     >
                                         <td className="p-2 text-sm"><b>{item.dayOfWeek}: </b>{item.date}</td>
@@ -302,6 +319,45 @@ useEffect(() => {
                     </div>
                 </>
             )}
+            {showModal && selectedDay && (
+                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+                    <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 w-[95%] max-w-md shadow-2xl">
+
+                        <h3 className="text-xl font-semibold mb-4 text-slate-200">
+                            División del día
+                        </h3>
+
+                        <p className="text-slate-400 mb-2">
+                            <b>{selectedDay.dayOfWeek}:</b> {selectedDay.date}
+                        </p>
+
+                        <p className="text-green-400 text-lg font-bold mb-6">
+                            Total: {formatCurrency(selectedDay.totalSales)}
+                        </p>
+
+                        {(() => {
+                            const pockets = calculatePockets(selectedDay.totalSales);
+                            return (
+                                <div className="space-y-3 text-sm">
+                                    <PocketRow label="Operación (65%)" value={pockets.operacion} />
+                                    <PocketRow label="Arriendo (15%)" value={pockets.arriendo} />
+                                    <PocketRow label="Deuda (10%)" value={pockets.deuda} />
+                                    <PocketRow label="Emergencia (5%)" value={pockets.emergencia} />
+                                    <PocketRow label="Socios (5%)" value={pockets.socios} />
+                                </div>
+                            );
+                        })()}
+
+                        <button
+                            onClick={() => setShowModal(false)}
+                            className="mt-6 w-full bg-red-600 hover:bg-red-700 py-2 rounded-md font-semibold transition"
+                        >
+                            Cerrar
+                        </button>
+                    </div>
+                </div>
+            )}
+
         </div>
     );
 }
@@ -315,6 +371,17 @@ function calculateMovingAverage(data, period) {
         return { ...entry, movingAvg: avg };
     });
 }
+function PocketRow({ label, value }) {
+    return (
+        <div className="flex justify-between bg-gray-800 px-4 py-2 rounded-md border border-gray-700">
+            <span className="text-slate-300">{label}</span>
+            <span className="font-semibold text-white">
+                {formatCurrency(value)}
+            </span>
+        </div>
+    );
+}
+
 
 function calculateVariation(data) {
     return data.map((entry, index) => {
