@@ -499,6 +499,7 @@ function DailySales() {
                                                     tableNumber: sales.find((s) => s.id === selectedSaleId)?.table,
                                                     game: sales.find((s) => s.id === selectedSaleId)?.gameId?.toString(),
                                                     availableGames: [], // si quieres también puedes cargarlos
+                                                    availableProducts: [],
                                                     generalObservation:
                                                         sales.find((s) => s.id === selectedSaleId)?.generalObservation,
                                                     orderType:

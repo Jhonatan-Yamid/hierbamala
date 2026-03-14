@@ -113,6 +113,7 @@ const SalesForm = ({ saleId }) => {
           tableNumber,
           game,
           availableGames,
+          availableProducts,   // ← AGREGAR ESTA LÍNEA
           generalObservation,
           orderType,
         });
@@ -250,6 +251,7 @@ const SalesForm = ({ saleId }) => {
                 tableNumber,
                 game,
                 availableGames,
+                availableProducts,   // ← AGREGAR ESTA LÍNEA
                 generalObservation,
                 orderType,
               })

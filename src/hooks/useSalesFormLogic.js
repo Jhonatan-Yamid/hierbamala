@@ -1,7 +1,86 @@
 // hooks/useSalesFormLogic.js
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
+
+// ─── Orden de categorías ─────────────────────────────────────────────────────
+const TICKET_CATEGORY_ORDER = [
+  "Entradas",
+  "Los Platos de la Casa",
+  "Asados",
+  "Hamburguesas Artesanales",
+  "Bebidas Calientes",
+  "Bebidas Frías y Refrescantes",
+  "Cerveza Artesanal",
+  "Cocktails de Autor",
+  "Licores",
+  "Adiciones",
+  "Otros",
+];
+
+const CATEGORY_LABEL = {
+  "Entradas":                       "ENTRADAS",
+  "Los Platos de la Casa":          "PLATOS DE LA CASA",
+  "Asados":                         "ASADOS",
+  "Hamburguesas Artesanales":       "HAMBURGUESAS",
+  "Bebidas Calientes":              "BEBIDAS CALIENTES",
+  "Bebidas Frías y Refrescantes":   "BEBIDAS FRÍAS",
+  "Cerveza Artesanal":              "CERVEZAS",
+  "Cocktails de Autor":             "COCKTAILS",
+  "Licores":                        "LICORES",
+  "Adiciones":                      "ADICIONES",
+  "Otros":                          "OTROS",
+};
+
+const formatCLP = (value) =>
+  new Intl.NumberFormat("es-CL", {
+    style: "currency",
+    currency: "CLP",
+    maximumFractionDigits: 0,
+  }).format(value || 0);
+
+/**
+ * Agrupa productos idénticos (mismo id + observación + adiciones)
+ * y devuelve precio correcto + categoría.
+ */
+function groupAndSortProducts(products, availableProducts = []) {
+  const grouped = [];
+
+  for (const p of products) {
+    const template = availableProducts.find((ap) => ap.id === p.id);
+    const price = p.price ?? template?.price ?? 0;
+    const category = p.category ?? template?.category ?? "Otros";
+
+    const additionsKey = JSON.stringify(
+      (p.additions || []).map((a) => a.name).sort()
+    );
+    const key = `${p.id}||${p.observation || ""}||${additionsKey}`;
+
+    const existing = grouped.find((g) => g._key === key);
+    if (existing) {
+      existing.quantity += p.quantity || 1;
+    } else {
+      grouped.push({
+        _key: key,
+        id: p.id,
+        name: p.name,
+        price,
+        category,
+        observation: p.observation || "",
+        additions: p.additions || [],
+        quantity: p.quantity || 1,
+      });
+    }
+  }
+
+  grouped.sort((a, b) => {
+    const ai = TICKET_CATEGORY_ORDER.indexOf(a.category);
+    const bi = TICKET_CATEGORY_ORDER.indexOf(b.category);
+    return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+  });
+
+  return grouped;
+}
 
 const useSalesFormLogic = (saleId) => {
   const [isLoading, setIsLoading] = useState(true);
@@ -17,53 +96,49 @@ const useSalesFormLogic = (saleId) => {
   const [availableProducts, setAvailableProducts] = useState([]);
   const [availableGames, setAvailableGames] = useState([]);
   const [availableFetchedAdditions, setAvailableFetchedAdditions] = useState([]);
-  // NUEVO: Estado para orderType
-  const [orderType, setOrderType] = useState("En mesa"); // Default a "En mesa"
+  const [orderType, setOrderType] = useState("En mesa");
 
   const isEditing = !!saleId;
 
   const fetchInitialData = useCallback(async () => {
     setIsLoading(true);
     try {
-      // 1. Cargar productos (todos los productos)
       const productsRes = await fetch("/api/product");
-      if (!productsRes.ok) throw new Error('Error cargando productos');
+      if (!productsRes.ok) throw new Error("Error cargando productos");
       const productsData = await productsRes.json();
-      if (!Array.isArray(productsData)) throw new Error('Formato de productos inválido');
+      if (!Array.isArray(productsData)) throw new Error("Formato de productos inválido");
       setAvailableProducts(productsData);
 
-      // 3. Cargar Juegos de Mesa desde la API
-      const gamesRes = await fetch('/api/game');
-      if (!gamesRes.ok) throw new Error('Error cargando juegos');
+      const gamesRes = await fetch("/api/game");
+      if (!gamesRes.ok) throw new Error("Error cargando juegos");
       const gamesData = await gamesRes.json();
-      if (!Array.isArray(gamesData)) throw new Error('Formato de juegos inválido');
+      if (!Array.isArray(gamesData)) throw new Error("Formato de juegos inválido");
       setAvailableGames(gamesData);
 
-      // 4. Cargar Adiciones desde la API
-      const additionsRes = await fetch('/api/product?category=adiciones');
-      if (!additionsRes.ok) throw new Error('Error cargando adiciones');
+      const additionsRes = await fetch("/api/product?category=adiciones");
+      if (!additionsRes.ok) throw new Error("Error cargando adiciones");
       const additionsData = await additionsRes.json();
-      if (!Array.isArray(additionsData)) throw new Error('Formato de adiciones inválido');
+      if (!Array.isArray(additionsData)) throw new Error("Formato de adiciones inválido");
       setAvailableFetchedAdditions(additionsData);
 
-      // 5. Si es edición, cargar datos de la venta específica
       if (saleId) {
         const numericId = Number(saleId);
         const saleRes = await fetch(`/api/sale/${numericId}`);
-        if (!saleRes.ok) throw new Error('Error cargando venta');
+        if (!saleRes.ok) throw new Error("Error cargando venta");
         const saleData = await saleRes.json();
 
-        if (!saleData?.products) throw new Error('Estructura de datos de venta inválida');
+        if (!saleData?.products) throw new Error("Estructura de datos de venta inválida");
 
-        const mappedProducts = saleData.products.map(p => ({
+        const mappedProducts = saleData.products.map((p) => ({
           ...p,
-          additions: p.additions?.map(a => ({
-            id: a.id || a.name, // Asegúrate de que el id sea adecuado para tu frontend
-            name: a.name,
-            price: a.price
-          })) || [],
+          additions:
+            p.additions?.map((a) => ({
+              id: a.id || a.name,
+              name: a.name,
+              price: a.price,
+            })) || [],
           observation: p.observation || "",
-          quantity: p.quantity || 1
+          quantity: p.quantity || 1,
         }));
 
         setProducts(mappedProducts);
@@ -71,12 +146,11 @@ const useSalesFormLogic = (saleId) => {
         setSaleStatus(saleData.status || "en proceso");
         setGeneralObservation(saleData.generalObservation || "");
         setGame(saleData.gameId?.toString() || "");
-        setOrderType(saleData.orderType || "En mesa"); // NUEVO: Setear el tipo de pedido
+        setOrderType(saleData.orderType || "En mesa");
       }
-
     } catch (error) {
-      console.error('Error loading initial data:', error);
-      setError(error.message || 'Error cargando datos iniciales');
+      console.error("Error loading initial data:", error);
+      setError(error.message || "Error cargando datos iniciales");
     } finally {
       setIsLoading(false);
     }
@@ -86,49 +160,69 @@ const useSalesFormLogic = (saleId) => {
     fetchInitialData();
   }, [fetchInitialData]);
 
-
   const calculateTotal = () =>
     products.reduce(
       (total, p) =>
         total +
         (p.price + (p.additions?.reduce((s, a) => s + a.price, 0) || 0)) *
-        (p.quantity || 1),
+          (p.quantity || 1),
       0
     );
 
+  /**
+   * Genera texto del ticket ordenado por categoría, con precios correctos.
+   */
   const formatTicket = () => {
     const date = new Date();
-    let ticket = `Hierba Mala Gastrobar\n`;
-    ticket += `*** ${date.toLocaleDateString("es-CO")} ${date.toLocaleTimeString(
-      "es-CO"
-    )} ***\n`;
-    ticket += `Mesa: ${tableNumber}\n`;
-    ticket += `Juego: ${availableGames.find((g) => g.id.toString() === game)?.name || "N/A"
-      }\n`;
-    ticket += `Tipo de Pedido: ${orderType}\n`; // NUEVO: Añadir al ticket
-    ticket += `------------------------------------------\nCant\t Productos\n`;
+    const sep = "─────────────────────────────────";
 
-    const grouped = products.reduce((acc, p) => {
-      acc[p.name] = acc[p.name] || [];
-      acc[p.name].push(p);
-      return acc;
-    }, {});
+    let ticket = `    HIERBA MALA GASTROBAR\n`;
+    ticket += `${sep}\n`;
+    ticket += `Fecha: ${date.toLocaleDateString("es-CO")}  ${date.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}\n`;
+    ticket += `Mesa: ${tableNumber || "-"}\n`;
 
-    Object.entries(grouped).forEach(([name, group]) => {
-      ticket += `${group.length} ${name}\n`;
-      group.forEach((p, i) => {
-        const price =
-          p.price + (p.additions?.reduce((s, a) => s + a.price, 0) || 0);
-        ticket += `\t|${i + 1}. $${price.toLocaleString()} (${p.observation ||
-          "sin observaciones"})\n`;
-        p.additions?.forEach((a) => {
-          ticket += `\t\t+ ${a.name} ($${a.price})\n`;
-        });
-      });
-    });
+    const gameName = availableGames.find((g) => g.id.toString() === game)?.name;
+    if (gameName) ticket += `Juego: ${gameName}\n`;
+    ticket += `Tipo: ${orderType}\n`;
+    ticket += `${sep}\n`;
 
-    ticket += `------------------------------------------\n`;
-    ticket += `\t\t\t\tTotal: $${calculateTotal().toLocaleString()}\n`;
+    const grouped = groupAndSortProducts(products, availableProducts);
+    let currentCategory = null;
+
+    for (const item of grouped) {
+      // Encabezado de categoría
+      if (item.category !== currentCategory) {
+        if (currentCategory !== null) ticket += "\n"; // espacio entre categorías
+        currentCategory = item.category;
+        const label = CATEGORY_LABEL[item.category] || item.category.toUpperCase();
+        ticket += `  ▸ ${label}\n`;
+      }
+
+      const additionsTotal = item.additions?.reduce((s, a) => s + a.price, 0) || 0;
+      const unitPrice = item.price + additionsTotal;
+      const lineTotal = unitPrice * item.quantity;
+
+      ticket += `  ${item.quantity}x ${item.name}\n`;
+      ticket += `     ${formatCLP(unitPrice)} c/u  →  ${formatCLP(lineTotal)}\n`;
+
+      if (item.observation) {
+        ticket += `     ⚠ ${item.observation}\n`;
+      }
+
+      for (const a of item.additions) {
+        ticket += `     + ${a.name} (${formatCLP(a.price)})\n`;
+      }
+    }
+
+    ticket += `\n${sep}\n`;
+
+    if (generalObservation) {
+      ticket += `Nota: ${generalObservation}\n`;
+      ticket += `${sep}\n`;
+    }
+
+    ticket += `TOTAL:  ${formatCLP(calculateTotal())}\n`;
+    ticket += `${sep}\n`;
 
     return ticket;
   };
