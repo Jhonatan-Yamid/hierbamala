@@ -267,9 +267,9 @@ function DailySales() {
 
     return (
         <div className="p-6 bg-gray-950 min-h-screen text-slate-200">
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
                 <h1 className="text-slate-200 font-semibold text-3xl">Ventas</h1>
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-3">
                     <button 
                         onClick={handleCheckTransfers}
                         disabled={loadingTransfers}
@@ -279,8 +279,8 @@ function DailySales() {
                         {loadingTransfers ? "Verificando..." : "Verificar transferencias"}
                     </button>
                     <Link href="/dashboard/sales">
-                        <button className="bg-gray-800 text-gray-200 flex items-center rounded-md px-4 py-1 hover:bg-gray-600 hover:text-white">
-                            Nueva venta +
+                        <button className="bg-gray-800 text-gray-200 flex items-center rounded-md px-4 py-1 hover:bg-gray-600 hover:text-white w-full">
+                           + Nueva venta
                         </button>
                     </Link>
                 </div>
