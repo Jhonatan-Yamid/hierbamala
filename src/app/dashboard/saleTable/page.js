@@ -1,12 +1,11 @@
-// components/DailySales.js
 "use client";
 import useTicketPrinter from "@/hooks/useTicketPrinter";
 import { useState, useEffect, useCallback } from "react";
-import { FaCashRegister, FaEdit, FaEye, FaTrashAlt } from "react-icons/fa";
+import { FaCashRegister, FaEdit, FaEye, FaTrashAlt, FaExchangeAlt } from "react-icons/fa";
 import { IoClose } from "react-icons/io5";
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
-import { FaPrint} from "react-icons/fa";
+import { FaPrint } from "react-icons/fa";
 
 function DailySales() {
     const { printTicket } = useTicketPrinter();
@@ -21,9 +20,14 @@ function DailySales() {
     const [selectedSaleId, setSelectedSaleId] = useState(null);
     const [cashReceived, setCashReceived] = useState("");
 
-    // Bloquear scroll del fondo al abrir la modal
+    // Estados para la funcionalidad de transferencias
+    const [showTransfers, setShowTransfers] = useState(false);
+    const [lastTransfers, setLastTransfers] = useState([]);
+    const [loadingTransfers, setLoadingTransfers] = useState(false);
+
+    // Bloquear scroll del fondo al abrir modales
     useEffect(() => {
-        if (showPreview) {
+        if (showPreview || showTransfers) {
             document.body.style.overflow = "hidden";
         } else {
             document.body.style.overflow = "auto";
@@ -31,7 +35,7 @@ function DailySales() {
         return () => {
             document.body.style.overflow = "auto";
         };
-    }, [showPreview]);
+    }, [showPreview, showTransfers]);
 
     const getOperationalDayRange = () => {
         const now = new Date();
@@ -75,6 +79,27 @@ function DailySales() {
     useEffect(() => {
         fetchSalesData();
     }, [fetchSalesData]);
+
+    // Función para obtener transferencias desde el API real
+    const handleCheckTransfers = async () => {
+        setLoadingTransfers(true);
+        try {
+            const res = await fetch("/api/mail-verify");
+            const result = await res.json();
+            
+            if (result.success) {
+                setLastTransfers(result.data);
+                setShowTransfers(true);
+            } else {
+                alert("Error al consultar correos: " + result.error);
+            }
+        } catch (error) {
+            console.error("Error al obtener transferencias:", error);
+            alert("No se pudo conectar con el servidor de correos.");
+        } finally {
+            setLoadingTransfers(false);
+        }
+    };
 
     const handlePreview = async (sale) => {
         try {
@@ -244,11 +269,21 @@ function DailySales() {
         <div className="p-6 bg-gray-950 min-h-screen text-slate-200">
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-slate-200 font-semibold text-3xl">Ventas</h1>
-                <Link href="/dashboard/sales">
-                    <button className="bg-gray-800 text-gray-200 flex items-center rounded-md px-4 py-1 hover:bg-gray-600 hover:text-white">
-                        Nueva venta +
+                <div className="flex gap-3">
+                    <button 
+                        onClick={handleCheckTransfers}
+                        disabled={loadingTransfers}
+                        className="bg-blue-800 text-gray-200 flex items-center gap-2 rounded-md px-4 py-1 hover:bg-blue-600 hover:text-white transition-colors disabled:opacity-50"
+                    >
+                        <FaExchangeAlt size={14} /> 
+                        {loadingTransfers ? "Verificando..." : "Verificar transferencias"}
                     </button>
-                </Link>
+                    <Link href="/dashboard/sales">
+                        <button className="bg-gray-800 text-gray-200 flex items-center rounded-md px-4 py-1 hover:bg-gray-600 hover:text-white">
+                            Nueva venta +
+                        </button>
+                    </Link>
+                </div>
             </div>
 
             <div className="flex space-x-4 mb-6">
@@ -314,7 +349,42 @@ function DailySales() {
                 renderSaleList(pastSales)
             )}
 
-            {/* Modal de vista previa */}
+            {/* Modal de transferencias */}
+            {showTransfers && (
+                <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-[60]">
+                    <div className="bg-gray-900 w-full max-w-md mx-4 rounded-lg overflow-hidden border border-gray-700">
+                        <div className="flex justify-between items-center px-6 py-4 border-b border-gray-700">
+                            <h2 className="text-white text-xl font-semibold">Últimas 3 Transferencias</h2>
+                            <button onClick={() => setShowTransfers(false)} className="text-white hover:text-gray-400">
+                                <IoClose size={24} />
+                            </button>
+                        </div>
+                        <div className="p-6 flex flex-col gap-4">
+                            {lastTransfers.length > 0 ? (
+                                lastTransfers.map((t, idx) => (
+                                    <div key={t.id_interno || idx} className="bg-gray-800 p-4 rounded-md border border-gray-700 flex justify-between items-center">
+                                        <div className="max-w-[60%]">
+                                            <p className="text-white font-bold truncate capitalize">{t.quien.toLowerCase()}</p>
+                                            <p className="text-gray-400 text-xs">{t.fecha}</p>
+                                            <p className="text-gray-500 text-[10px] truncate">{t.sujeto}</p>
+                                        </div>
+                                        <p className="text-green-400 font-bold text-lg whitespace-nowrap">
+                                            {t.monto}
+                                        </p>
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="text-gray-400 text-center">No se encontraron transferencias recientes.</p>
+                            )}
+                        </div>
+                        <div className="p-4 bg-gray-800 text-center">
+                            <button onClick={() => setShowTransfers(false)} className="text-gray-300 hover:text-white text-sm">Cerrar</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal de vista previa (se mantiene igual) */}
             {showPreview && (
                 <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
                     <div className="bg-gray-900 w-full h-full max-h-screen overflow-hidden flex flex-col relative rounded-none">
@@ -491,25 +561,25 @@ function DailySales() {
                                                     </p>
                                                 )}
                                             </div>
-                                                                                    <button
-                                            onClick={() =>
-                                                printTicket({
-                                                    products: selectedProducts,
-                                                    total: subtotal,
-                                                    tableNumber: sales.find((s) => s.id === selectedSaleId)?.table,
-                                                    game: sales.find((s) => s.id === selectedSaleId)?.gameId?.toString(),
-                                                    availableGames: [], // si quieres también puedes cargarlos
-                                                    availableProducts: [],
-                                                    generalObservation:
-                                                        sales.find((s) => s.id === selectedSaleId)?.generalObservation,
-                                                    orderType:
-                                                        sales.find((s) => s.id === selectedSaleId)?.orderType,
-                                                })
-                                            }
-                                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-lg flex items-center gap-2"
-                                        >
-                                           <FaPrint /> Imprimir
-                                        </button>
+                                            <button
+                                                onClick={() =>
+                                                    printTicket({
+                                                        products: selectedProducts,
+                                                        total: subtotal,
+                                                        tableNumber: sales.find((s) => s.id === selectedSaleId)?.table,
+                                                        game: sales.find((s) => s.id === selectedSaleId)?.gameId?.toString(),
+                                                        availableGames: [],
+                                                        availableProducts: [],
+                                                        generalObservation:
+                                                            sales.find((s) => s.id === selectedSaleId)?.generalObservation,
+                                                        orderType:
+                                                            sales.find((s) => s.id === selectedSaleId)?.orderType,
+                                                    })
+                                                }
+                                                className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-lg flex items-center gap-2"
+                                            >
+                                                <FaPrint /> Imprimir
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
