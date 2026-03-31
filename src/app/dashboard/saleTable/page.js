@@ -84,9 +84,17 @@ function DailySales() {
     const handleCheckTransfers = async () => {
         setLoadingTransfers(true);
         try {
-            const res = await fetch("/api/mail-verify");
+            const res = await fetch("/api/mail-verify", {
+                method: "GET",
+                headers: {
+                    "Cache-Control": "no-cache, no-store, must-revalidate",
+                    "Pragma": "no-cache",
+                    "Expires": "0"
+                },
+                cache: "no-store" // Esto es específico de la API de Fetch y Next.js
+            });
             const result = await res.json();
-            
+
             if (result.success) {
                 setLastTransfers(result.data);
                 setShowTransfers(true);
@@ -270,17 +278,17 @@ function DailySales() {
             <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
                 <h1 className="text-slate-200 font-semibold text-3xl">Ventas</h1>
                 <div className="flex flex-col sm:flex-row gap-3">
-                    <button 
+                    <button
                         onClick={handleCheckTransfers}
                         disabled={loadingTransfers}
                         className="bg-blue-800 text-gray-200 flex items-center gap-2 rounded-md px-4 py-1 hover:bg-blue-600 hover:text-white transition-colors disabled:opacity-50"
                     >
-                        <FaExchangeAlt size={14} /> 
+                        <FaExchangeAlt size={14} />
                         {loadingTransfers ? "Verificando..." : "Verificar transferencias"}
                     </button>
                     <Link href="/dashboard/sales">
                         <button className="bg-gray-800 text-gray-200 flex items-center rounded-md px-4 py-1 hover:bg-gray-600 hover:text-white w-full">
-                           + Nueva venta
+                            + Nueva venta
                         </button>
                     </Link>
                 </div>
@@ -309,8 +317,8 @@ function DailySales() {
                         <button
                             onClick={() => setSubTab("todas")}
                             className={`px-3 py-1 rounded-full text-sm ${subTab === "todas"
-                                    ? "bg-green-700 text-white"
-                                    : "bg-gray-600 text-gray-200"
+                                ? "bg-green-700 text-white"
+                                : "bg-gray-600 text-gray-200"
                                 }`}
                         >
                             Todas
@@ -318,8 +326,8 @@ function DailySales() {
                         <button
                             onClick={() => setSubTab("pendientes")}
                             className={`px-3 py-1 rounded-full text-sm ${subTab === "pendientes"
-                                    ? "bg-yellow-700 text-white"
-                                    : "bg-gray-600 text-gray-200"
+                                ? "bg-yellow-700 text-white"
+                                : "bg-gray-600 text-gray-200"
                                 }`}
                         >
                             En proceso / En mesa
@@ -327,8 +335,8 @@ function DailySales() {
                         <button
                             onClick={() => setSubTab("pagadas")}
                             className={`px-3 py-1 rounded-full text-sm ${subTab === "pagadas"
-                                    ? "bg-blue-700 text-white"
-                                    : "bg-gray-600 text-gray-200"
+                                ? "bg-blue-700 text-white"
+                                : "bg-gray-600 text-gray-200"
                                 }`}
                         >
                             Pagadas
