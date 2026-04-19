@@ -1,10 +1,11 @@
 "use client";
 import useTicketPrinter from "@/hooks/useTicketPrinter";
 import { useState, useEffect, useCallback } from "react";
-import { FaCashRegister, FaEdit, FaEye, FaTrashAlt, FaExchangeAlt, FaEyeSlash, FaPrint } from "react-icons/fa"; // Importé FaEyeSlash
+import { FaCashRegister, FaEdit, FaEye, FaTrashAlt, FaExchangeAlt, FaEyeSlash } from "react-icons/fa";
 import { IoClose } from "react-icons/io5";
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
+import { FaPrint } from "react-icons/fa";
 
 function DailySales() {
     const { printTicket } = useTicketPrinter();
@@ -13,19 +14,19 @@ function DailySales() {
     const [sales, setSales] = useState([]);
     const [todaySales, setTodaySales] = useState([]);
     const [pastSales, setPastSales] = useState([]);
+    const [showTotal, setShowTotal] = useState(false);
     const [selectedProducts, setSelectedProducts] = useState([]);
     const [showPreview, setShowPreview] = useState(false);
     const [activeTab, setActiveTab] = useState("today");
     const [selectedSaleId, setSelectedSaleId] = useState(null);
     const [cashReceived, setCashReceived] = useState("");
 
-    // --- NUEVO ESTADO PARA OCULTAR TOTAL ---
-    const [showTotal, setShowTotal] = useState(false);
-
+    // Estados para la funcionalidad de transferencias
     const [showTransfers, setShowTransfers] = useState(false);
     const [lastTransfers, setLastTransfers] = useState([]);
     const [loadingTransfers, setLoadingTransfers] = useState(false);
 
+    // Bloquear scroll del fondo al abrir modales
     useEffect(() => {
         if (showPreview || showTransfers) {
             document.body.style.overflow = "hidden";
@@ -54,6 +55,7 @@ function DailySales() {
         try {
             const res = await fetch("/api/sale");
             const data = await res.json();
+
             const { start, end } = getOperationalDayRange();
             const salesToday = [];
             const salesPast = [];
@@ -79,6 +81,7 @@ function DailySales() {
         fetchSalesData();
     }, [fetchSalesData]);
 
+    // Función para obtener transferencias desde el API real
     const handleCheckTransfers = async () => {
         setLoadingTransfers(true);
         try {
@@ -89,9 +92,10 @@ function DailySales() {
                     "Pragma": "no-cache",
                     "Expires": "0"
                 },
-                cache: "no-store"
+                cache: "no-store" // Esto es específico de la API de Fetch y Next.js
             });
             const result = await res.json();
+
             if (result.success) {
                 setLastTransfers(result.data);
                 setShowTransfers(true);
@@ -111,6 +115,7 @@ function DailySales() {
             const res = await fetch(`/api/sale/${sale.id}`);
             if (!res.ok) throw new Error("Error al obtener detalles de la venta");
             const data = await res.json();
+
             setSelectedSaleId(sale.id);
             setSelectedProducts(data.products || []);
             setShowPreview(true);
@@ -121,6 +126,7 @@ function DailySales() {
     };
 
     const closePreviewModal = () => setShowPreview(false);
+
     const totalToday = todaySales.reduce((acc, sale) => acc + sale.totalAmount, 0);
 
     const handleStatusAdvance = async (sale) => {
@@ -135,10 +141,12 @@ function DailySales() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ status: newStatus }),
             });
+
             if (!res.ok) {
                 const errorData = await res.json();
                 throw new Error(errorData.message || "Error al actualizar el estado.");
             }
+
             fetchSalesData();
         } catch (error) {
             console.error("Error al actualizar el estado:", error);
@@ -164,31 +172,30 @@ function DailySales() {
 
     const renderSaleList = (salesList) => (
         <div className="flex flex-col gap-4 border-solid border rounded-md border-gray-600 p-5">
-            <div className="flex justify-between items-center">
-                <h1 className="text-slate-200 font-medium text-xl">Ventas Registradas</h1>
-                
-                {/* --- TOTAL DE HOY CON OPCIÓN DE OCULTAR --- */}
-                {session?.user?.image === 1 && activeTab === "today" && (
-                    <div className="flex items-center gap-3 bg-gray-900 px-4 py-2 rounded-lg border border-gray-700">
-                        <div className="flex flex-col items-end">
-                            <span className="text-gray-400 text-xs uppercase font-bold tracking-wider">Total Hoy</span>
-                            <span className={`text-green-300 font-bold text-lg transition-all duration-300 ${!showTotal ? "blur-md select-none" : "blur-0"}`}>
-                                {new Intl.NumberFormat("es-CL", {
-                                    style: "currency",
-                                    currency: "CLP",
-                                }).format(totalToday)}
-                            </span>
-                        </div>
-                        <button 
-                            onClick={() => setShowTotal(!showTotal)}
-                            className="text-gray-400 hover:text-white transition-colors p-2"
-                            title={showTotal ? "Ocultar total" : "Mostrar total"}
-                        >
-                            {showTotal ? <FaEyeSlash size={20} /> : <FaEye size={20} />}
-                        </button>
-                    </div>
-                )}
-            </div>
+            <h1 className="text-slate-200 font-medium text-xl">Ventas Registradas</h1>
+
+            {session?.user?.image === 1 && activeTab === "today" && (
+                <div className="text-green-300 font-bold text-lg flex items-center gap-2">
+                    <span>Total de hoy:</span>
+                    <span>
+                        {showTotal ? (
+                            new Intl.NumberFormat("es-CL", {
+                                style: "currency",
+                                currency: "CLP",
+                            }).format(totalToday)
+                        ) : (
+                            "****"
+                        )}
+                    </span>
+                    <button
+                        onClick={() => setShowTotal(!showTotal)}
+                        className="text-gray-400 hover:text-white transition-colors ml-2"
+                        title={showTotal ? "Ocultar total" : "Mostrar total"}
+                    >
+                        {showTotal ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
+                    </button>
+                </div>
+            )}
 
             {salesList.length === 0 ? (
                 <p className="text-slate-200">No hay ventas registradas</p>
@@ -196,7 +203,7 @@ function DailySales() {
                 salesList.map((sale) => (
                     <div
                         key={sale.id}
-                        className="flex items-start mb-4 cursor-pointer p-4 bg-gray-800 rounded-lg shadow-md hover:bg-gray-750 transition-colors"
+                        className="flex items-start mb-4 cursor-pointer p-4 bg-gray-800 rounded-lg shadow-md"
                     >
                         <div className="flex items-center justify-center w-14 h-14 bg-gray-700 rounded-md mr-4 flex-shrink-0 mt-1">
                             <FaCashRegister className="text-white" size={20} />
@@ -226,14 +233,18 @@ function DailySales() {
                                         onClick={() => handleStatusAdvance(sale)}
                                         className="mt-2 bg-emerald-700 hover:bg-emerald-600 text-white text-sm px-3 py-1 rounded"
                                     >
-                                        {sale.status === "en proceso" ? "Orden lista" : "Marcar como pagada"}
+                                        {sale.status === "en proceso"
+                                            ? "Orden lista"
+                                            : "Marcar como pagada"}
                                     </button>
                                 )}
                             </div>
 
                             <div className="flex flex-col sm:flex-row items-start sm:items-center mt-4 sm:mt-0 sm:ml-4 flex-shrink-0">
                                 <div className="flex items-center mb-4 sm:mb-0 mr-4">
-                                    <span className="text-slate-200 text-lg font-semibold mr-2">Total:</span>
+                                    <span className="text-slate-200 text-lg font-semibold mr-2">
+                                        Total:
+                                    </span>
                                     <span className="text-slate-300 text-lg font-semibold">
                                         {new Intl.NumberFormat("es-CL", {
                                             style: "currency",
@@ -278,7 +289,6 @@ function DailySales() {
 
     return (
         <div className="p-6 bg-gray-950 min-h-screen text-slate-200">
-            {/* ... Resto del componente (Header, Tabs, Modales) se mantiene igual ... */}
             <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
                 <h1 className="text-slate-200 font-semibold text-3xl">Ventas</h1>
                 <div className="flex flex-col sm:flex-row gap-3">
@@ -301,13 +311,15 @@ function DailySales() {
             <div className="flex space-x-4 mb-6">
                 <button
                     onClick={() => setActiveTab("today")}
-                    className={`px-4 py-2 rounded-t-md ${activeTab === "today" ? "bg-gray-800 text-white" : "bg-gray-600 text-gray-300"}`}
+                    className={`px-4 py-2 rounded-t-md ${activeTab === "today" ? "bg-gray-800 text-white" : "bg-gray-600 text-gray-300"
+                        }`}
                 >
                     Ventas de Hoy
                 </button>
                 <button
                     onClick={() => setActiveTab("past")}
-                    className={`px-4 py-2 rounded-t-md ${activeTab === "past" ? "bg-gray-800 text-white" : "bg-gray-600 text-gray-300"}`}
+                    className={`px-4 py-2 rounded-t-md ${activeTab === "past" ? "bg-gray-800 text-white" : "bg-gray-600 text-gray-300"
+                        }`}
                 >
                     Ventas Anteriores
                 </button>
@@ -316,15 +328,40 @@ function DailySales() {
             {activeTab === "today" ? (
                 <>
                     <div className="flex space-x-3 mb-4">
-                        <button onClick={() => setSubTab("todas")} className={`px-3 py-1 rounded-full text-sm ${subTab === "todas" ? "bg-green-700 text-white" : "bg-gray-600 text-gray-200"}`}>Todas</button>
-                        <button onClick={() => setSubTab("pendientes")} className={`px-3 py-1 rounded-full text-sm ${subTab === "pendientes" ? "bg-yellow-700 text-white" : "bg-gray-600 text-gray-200"}`}>En proceso / En mesa</button>
-                        <button onClick={() => setSubTab("pagadas")} className={`px-3 py-1 rounded-full text-sm ${subTab === "pagadas" ? "bg-blue-700 text-white" : "bg-gray-600 text-gray-200"}`}>Pagadas</button>
+                        <button
+                            onClick={() => setSubTab("todas")}
+                            className={`px-3 py-1 rounded-full text-sm ${subTab === "todas"
+                                ? "bg-green-700 text-white"
+                                : "bg-gray-600 text-gray-200"
+                                }`}
+                        >
+                            Todas
+                        </button>
+                        <button
+                            onClick={() => setSubTab("pendientes")}
+                            className={`px-3 py-1 rounded-full text-sm ${subTab === "pendientes"
+                                ? "bg-yellow-700 text-white"
+                                : "bg-gray-600 text-gray-200"
+                                }`}
+                        >
+                            En proceso / En mesa
+                        </button>
+                        <button
+                            onClick={() => setSubTab("pagadas")}
+                            className={`px-3 py-1 rounded-full text-sm ${subTab === "pagadas"
+                                ? "bg-blue-700 text-white"
+                                : "bg-gray-600 text-gray-200"
+                                }`}
+                        >
+                            Pagadas
+                        </button>
                     </div>
 
                     {renderSaleList(
                         todaySales.filter((sale) => {
                             if (subTab === "todas") return true;
-                            if (subTab === "pendientes") return sale.status === "en proceso" || sale.status === "en mesa";
+                            if (subTab === "pendientes")
+                                return sale.status === "en proceso" || sale.status === "en mesa";
                             if (subTab === "pagadas") return sale.status === "pagada";
                             return true;
                         })
@@ -334,8 +371,7 @@ function DailySales() {
                 renderSaleList(pastSales)
             )}
 
-            {/* Modales de transferencias y preview... */}
-            {/* (Se mantienen igual a tu código original) */}
+            {/* Modal de transferencias */}
             {showTransfers && (
                 <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-[60]">
                     <div className="bg-gray-900 w-full max-w-md mx-4 rounded-lg overflow-hidden border border-gray-700">
@@ -354,7 +390,9 @@ function DailySales() {
                                             <p className="text-gray-400 text-xs">{t.fecha}</p>
                                             <p className="text-gray-500 text-[10px] truncate">{t.sujeto}</p>
                                         </div>
-                                        <p className="text-green-400 font-bold text-lg whitespace-nowrap">{t.monto}</p>
+                                        <p className="text-green-400 font-bold text-lg whitespace-nowrap">
+                                            {t.monto}
+                                        </p>
                                     </div>
                                 ))
                             ) : (
@@ -368,43 +406,95 @@ function DailySales() {
                 </div>
             )}
 
+            {/* Modal de vista previa (se mantiene igual) */}
             {showPreview && (
                 <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
                     <div className="bg-gray-900 w-full h-full max-h-screen overflow-hidden flex flex-col relative rounded-none">
                         <div className="flex justify-between items-center px-6 py-4 border-b border-gray-700">
-                            <h2 className="text-white text-2xl font-semibold">Vista Previa de la Comanda</h2>
-                            <button className="text-white hover:text-gray-400" onClick={closePreviewModal}>
+                            <h2 className="text-white text-2xl font-semibold">
+                                Vista Previa de la Comanda
+                            </h2>
+                            <button
+                                className="text-white hover:text-gray-400"
+                                onClick={closePreviewModal}
+                            >
                                 <IoClose size={32} />
                             </button>
                         </div>
+
                         <div className="flex-1 overflow-y-auto px-6 py-4">
-                            {/* Lógica de productos agrupados... */}
                             {(() => {
                                 const grouped = [];
                                 selectedProducts.forEach((p) => {
-                                    const existing = grouped.find((g) => g.name === p.name && g.observation === p.observation && JSON.stringify(g.additions) === JSON.stringify(p.additions));
+                                    const existing = grouped.find(
+                                        (g) =>
+                                            g.name === p.name &&
+                                            g.observation === p.observation &&
+                                            JSON.stringify(g.additions) ===
+                                            JSON.stringify(p.additions)
+                                    );
                                     if (existing) existing.quantity += p.quantity;
                                     else grouped.push({ ...p });
                                 });
-                                if (grouped.length === 0) return <p className="text-gray-400 text-center mt-10">No hay productos en esta venta</p>;
+
+                                if (grouped.length === 0)
+                                    return (
+                                        <p className="text-gray-400 text-center mt-10">
+                                            No hay productos en esta venta
+                                        </p>
+                                    );
+
                                 return (
                                     <ul className="space-y-4 pb-40">
                                         {grouped.map((product, index) => (
-                                            <li key={index} className="bg-gray-800 p-3 rounded-lg shadow-sm border border-gray-700">
+                                            <li
+                                                key={index}
+                                                className="bg-gray-800 p-3 rounded-lg shadow-sm border border-gray-700"
+                                            >
                                                 <div className="flex justify-between items-center mb-2">
-                                                    <h3 className="text-lg font-semibold text-white">{product.name}</h3>
-                                                    <span className="text-sm text-gray-400">x{product.quantity}</span>
+                                                    <h3 className="text-lg font-semibold text-white">
+                                                        {product.name}
+                                                    </h3>
+                                                    <span className="text-sm text-gray-400">
+                                                        x{product.quantity}
+                                                    </span>
                                                 </div>
-                                                {product.observation && <p className="text-sm text-gray-300 italic mb-1">Obs: {product.observation}</p>}
+
+                                                {product.observation && (
+                                                    <p className="text-sm text-gray-300 italic mb-1">
+                                                        Obs: {product.observation}
+                                                    </p>
+                                                )}
+
                                                 {product.additions?.length > 0 && (
                                                     <ul className="text-sm text-gray-400 mt-1 pl-4 list-disc">
                                                         {product.additions.map((add, i) => (
-                                                            <li key={i}>+ {add.name} ({new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP" }).format(add.price)})</li>
+                                                            <li key={i}>
+                                                                + {add.name} (
+                                                                {new Intl.NumberFormat(
+                                                                    "es-CL",
+                                                                    {
+                                                                        style: "currency",
+                                                                        currency: "CLP",
+                                                                    }
+                                                                ).format(add.price)}
+                                                                )
+                                                            </li>
                                                         ))}
                                                     </ul>
                                                 )}
+
                                                 <p className="text-right text-green-400 font-semibold mt-2">
-                                                    {new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP" }).format((product.price + (product.additions?.reduce((sum, a) => sum + a.price, 0) || 0)) * product.quantity)}
+                                                    {new Intl.NumberFormat("es-CL", {
+                                                        style: "currency",
+                                                        currency: "CLP",
+                                                    }).format(
+                                                        (product.price +
+                                                            (product.additions?.reduce(
+                                                                (sum, a) => sum + a.price,
+                                                                0
+                                                            ) || 0)) * product.quantity
+                                                    )}
                                                 </p>
                                             </li>
                                         ))}
@@ -412,43 +502,102 @@ function DailySales() {
                                 );
                             })()}
                         </div>
-                        {/* Footer del Modal con Subtotal y Cambio */}
+
                         {(() => {
                             const subtotal = selectedProducts.reduce((acc, p) => {
-                                const adds = p.additions?.reduce((s, a) => s + a.price, 0) || 0;
+                                const adds =
+                                    p.additions?.reduce((s, a) => s + a.price, 0) || 0;
                                 return acc + (p.price + adds) * p.quantity;
                             }, 0);
+
                             const received = parseFloat(cashReceived || 0);
                             const change = received - subtotal;
-                            const currentSale = sales.find((s) => s.id === selectedSaleId);
 
                             return (
                                 <div className="bg-gray-800 border-t border-gray-700 px-6 py-4 flex flex-col gap-3 sticky bottom-0">
                                     <div className="flex justify-between items-center">
-                                        <p className="text-white font-semibold text-lg">Subtotal: {new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP" }).format(subtotal)}</p>
-                                        {["en proceso", "en mesa"].includes(currentSale?.status) && (
-                                            <button onClick={() => handleStatusAdvance(currentSale)} className="bg-emerald-700 hover:bg-emerald-600 text-white font-semibold px-4 py-2 rounded-lg shadow-md">
-                                                {currentSale?.status === "en proceso" ? "Orden lista" : "Marcar como pagada"}
-                                            </button>
-                                        )}
+                                        <p className="text-white font-semibold text-lg">
+                                            Subtotal:{" "}
+                                            {new Intl.NumberFormat("es-CL", {
+                                                style: "currency",
+                                                currency: "CLP",
+                                            }).format(subtotal)}
+                                        </p>
+
+                                        {["en proceso", "en mesa"].includes(
+                                            sales.find((s) => s.id === selectedSaleId)?.status
+                                        ) && (
+                                                <button
+                                                    onClick={() =>
+                                                        handleStatusAdvance(
+                                                            sales.find(
+                                                                (s) => s.id === selectedSaleId
+                                                            )
+                                                        )
+                                                    }
+                                                    className="bg-emerald-700 hover:bg-emerald-600 text-white font-semibold px-4 py-2 rounded-lg shadow-md"
+                                                >
+                                                    {sales.find(
+                                                        (s) => s.id === selectedSaleId
+                                                    )?.status === "en proceso"
+                                                        ? "Orden lista"
+                                                        : "Marcar como pagada"}
+                                                </button>
+                                            )}
+
                                     </div>
+
                                     <div className="flex flex-col mt-2">
-                                        <label className="text-gray-300 text-sm mb-1">Monto recibido</label>
+                                        <label className="text-gray-300 text-sm mb-1">
+                                            Monto recibido
+                                        </label>
                                         <div className="flex items-center gap-3">
-                                            <input type="number" value={cashReceived} onChange={(e) => setCashReceived(e.target.value)} placeholder="Ej: 30000" className="bg-gray-700 text-white px-3 py-2 rounded-md w-32 text-right" />
+                                            <input
+                                                type="number"
+                                                value={cashReceived}
+                                                onChange={(e) =>
+                                                    setCashReceived(e.target.value)
+                                                }
+                                                placeholder="Ej: 30000"
+                                                className="bg-gray-700 text-white px-3 py-2 rounded-md w-32 text-right"
+                                            />
                                             <div>
-                                                <p className="text-green-400 font-semibold text-lg">Cambio: {new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP" }).format(change > 0 ? change : 0)}</p>
+                                                <p className="text-green-400 font-semibold text-lg">
+                                                    Cambio:{" "}
+                                                    {new Intl.NumberFormat("es-CL", {
+                                                        style: "currency",
+                                                        currency: "CLP",
+                                                    }).format(change > 0 ? change : 0)}
+                                                </p>
+                                                {cashReceived && (
+                                                    <p className="text-gray-400 text-xs">
+                                                        {new Intl.NumberFormat("es-CL", {
+                                                            style: "currency",
+                                                            currency: "CLP",
+                                                        }).format(received)}{" "}
+                                                        -{" "}
+                                                        {new Intl.NumberFormat("es-CL", {
+                                                            style: "currency",
+                                                            currency: "CLP",
+                                                        }).format(subtotal)}
+                                                    </p>
+                                                )}
                                             </div>
-                                            <button 
-                                                onClick={() => printTicket({ 
-                                                    products: selectedProducts, 
-                                                    total: subtotal, 
-                                                    tableNumber: currentSale?.table, 
-                                                    game: currentSale?.gameId?.toString(), 
-                                                    generalObservation: currentSale?.generalObservation, 
-                                                    orderType: currentSale?.orderType,
-                                                    availableGames: [], availableProducts: []
-                                                })} 
+                                            <button
+                                                onClick={() =>
+                                                    printTicket({
+                                                        products: selectedProducts,
+                                                        total: subtotal,
+                                                        tableNumber: sales.find((s) => s.id === selectedSaleId)?.table,
+                                                        game: sales.find((s) => s.id === selectedSaleId)?.gameId?.toString(),
+                                                        availableGames: [],
+                                                        availableProducts: [],
+                                                        generalObservation:
+                                                            sales.find((s) => s.id === selectedSaleId)?.generalObservation,
+                                                        orderType:
+                                                            sales.find((s) => s.id === selectedSaleId)?.orderType,
+                                                    })
+                                                }
                                                 className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-lg flex items-center gap-2"
                                             >
                                                 <FaPrint /> Imprimir
