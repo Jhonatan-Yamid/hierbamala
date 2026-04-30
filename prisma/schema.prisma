@@ -161,6 +161,23 @@ model ProviderMovement {
   createdAt   DateTime  @default(now())
 }
 
+model Business {
+  id             Int      @id @default(autoincrement())
+  type           String
+  name           String
+  nit            String?
+  address        String?
+  phone          String?
+  taxPercentage  Float    @default(0)
+  primaryColor   String   @default("#000000")
+  secondaryColor String?
+  logoUrl        String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+}
+
+
 enum MovementType {
   INVOICE   // Factura (entra deuda → saldo sube)
   PAYMENT   // Pago (sale dinero → saldo baja)

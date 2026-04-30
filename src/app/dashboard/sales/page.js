@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import useSalesFormLogic from "@/hooks/useSalesFormLogic";
 import ProductSearch from "@/components/ProductSearch";
 import ProductList from "@/components/ProductList";
@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 const SalesForm = ({ saleId }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [shouldPrint, setShouldPrint] = useState(false);
+  const [businessType, setBusinessType] = useState("restaurant"); // 👈 Estado para el tipo de negocio
   const router = useRouter();
 
   const {
@@ -47,6 +48,25 @@ const SalesForm = ({ saleId }) => {
   const { printTicket } = useTicketPrinter();
   const tableInputRef = useRef(null);
 
+  // 🚀 NUEVA CONSULTA: Traer datos del negocio al cargar
+  useEffect(() => {
+    const fetchBusinessConfig = async () => {
+      try {
+        const res = await fetch("/api/business"); // Asegúrate de tener esta ruta API
+        if (res.ok) {
+          const data = await res.json();
+          // Suponiendo que la API devuelve un objeto o array con el campo 'type'
+          if (data && data.type) {
+            setBusinessType(data.type.toLowerCase());
+          }
+        }
+      } catch (err) {
+        console.error("Error cargando configuración de negocio:", err);
+      }
+    };
+    fetchBusinessConfig();
+  }, []);
+
   if (isLoading) {
     return (
       <div className="w-full flex flex-col items-center justify-center p-6">
@@ -58,8 +78,8 @@ const SalesForm = ({ saleId }) => {
 
   const handlePay = async () => {
     if (isSubmitting) return; // 🔒 Bloquea doble click
-
-    if (!tableNumber || tableNumber.trim() === "") {
+// 💡 Validación dinámica: Solo exigir mesa si NO es fruver
+    if (businessType !== "fruver" && (!tableNumber || tableNumber.trim() === "")) {
       alert("Debes ingresar el número de mesa");
       tableInputRef.current?.focus();
       return;
@@ -68,11 +88,11 @@ const SalesForm = ({ saleId }) => {
     setIsSubmitting(true);
 
     const saleData = {
-      tableNumber,
+      tableNumber: businessType === "fruver" ? "Mostrador" : tableNumber,
       saleStatus,
       generalObservation,
       totalAmount: calculateTotal(),
-      game,
+      game: businessType === "fruver" ? null : game,
       orderType,
       products: products.map((p) => ({
         id: p.id,
@@ -177,6 +197,7 @@ const SalesForm = ({ saleId }) => {
             setProducts={setProducts}
             availableAdditions={availableAdditions}
             availableProducts={availableProducts}
+            businessType={businessType}
           />
 
           <SaleInfoFields
@@ -190,6 +211,7 @@ const SalesForm = ({ saleId }) => {
             orderType={orderType}
             setOrderType={setOrderType}
             tableInputRef={tableInputRef} // 👈 PASAMOS EL REF
+            businessType={businessType}
           />
 
           {error && <div className="text-red-400 text-sm rounded-md p-2 bg-red-900/20">{error}</div>}

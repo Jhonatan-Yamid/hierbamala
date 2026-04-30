@@ -20,15 +20,7 @@ import {
 } from "react-icons/fa";
 
 /**
- * ProductList.jsx
- *
- * Props:
- * - products: array of product instances (cada unidad como un item individual)
- * - setProducts: setter for products
- * - availableAdditions: array de adiciones disponibles { id, name, price }
- * - availableProducts: array de productos con { id, name, price, category }
- *
- * UI: Total Dark UI Premium — chips/badges, plus/minus, collapse, responsive
+ * ProductList.jsx optimizado para Restaurante y Fruver
  */
 
 const CATEGORY_ORDER = [
@@ -60,12 +52,12 @@ const CATEGORY_META = {
 const formatCLP = (value) =>
   new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP" }).format(value || 0);
 
-export default function ProductList({ products, setProducts, availableAdditions = [], availableProducts = [] }) {
+export default function ProductList({ products, setProducts, availableAdditions = [], availableProducts = [], businessType }) {
   const [openCategory, setOpenCategory] = useState(null);
   const [openInstanceIndex, setOpenInstanceIndex] = useState(null);
   const [additionSearch, setAdditionSearch] = useState({});
   const additionInputRefs = useRef({});
-
+  const isFruver = businessType === "fruver";
 
   // agrupar availableProducts por categoría
   const groupedProducts = useMemo(() => {
@@ -75,14 +67,12 @@ export default function ProductList({ products, setProducts, availableAdditions 
       if (!map[cat]) map[cat] = [];
       map[cat].push(prod);
     }
-    // ensure standard categories exist
     for (const cat of CATEGORY_ORDER) {
       if (!map[cat]) map[cat] = [];
     }
     return map;
   }, [availableProducts]);
 
-  // contar cuántos items seleccionados por categoría
   const selectedCountByCategory = useMemo(() => {
     const counts = {};
     for (const [cat, items] of Object.entries(groupedProducts)) {
@@ -94,13 +84,31 @@ export default function ProductList({ products, setProducts, availableAdditions 
     return counts;
   }, [groupedProducts, products]);
 
-  // categorias ordenadas para render
   const renderCategories = useMemo(() => {
     const extra = Object.keys(groupedProducts).filter(c => !CATEGORY_ORDER.includes(c)).sort();
     return [...CATEGORY_ORDER.filter(c => groupedProducts[c] !== undefined), ...extra];
   }, [groupedProducts]);
 
-  // helpers para manejar instancias
+  // --- Lógica de Cantidad para Fruver ---
+  const handleFruverQuantityChange = (productId, newQuantity) => {
+    const qty = parseInt(newQuantity) || 0;
+    const template = availableProducts.find((p) => p.id === productId) || {};
+    
+    setProducts((prev) => {
+      const filtered = prev.filter(p => p.id !== productId);
+      const newInstances = Array.from({ length: qty }, () => ({
+        id: productId,
+        name: template.name || "Producto",
+        price: template.price || 0,
+        observation: "",
+        additions: [],
+        additionSearchTerm: "",
+        additionSuggestions: [],
+      }));
+      return [...filtered, ...newInstances];
+    });
+  };
+
   const incrementProduct = (productId) => {
     const template = availableProducts.find((p) => p.id === productId) || {};
     const instance = {
@@ -122,7 +130,6 @@ export default function ProductList({ products, setProducts, availableAdditions 
       const idxFromStart = prev.length - 1 - i;
       const copy = [...prev];
       copy.splice(idxFromStart, 1);
-      // ajustar índice abierto
       setOpenInstanceIndex((openIdx) => (openIdx === null ? null : openIdx > idxFromStart ? openIdx - 1 : openIdx === idxFromStart ? null : openIdx));
       return copy;
     });
@@ -186,34 +193,25 @@ export default function ProductList({ products, setProducts, availableAdditions 
     });
   };
 
-  // 1. Abrir categoría + instancia al agregar producto
   useLayoutEffect(() => {
     if (!products.length) return;
-
     const lastIndex = products.length - 1;
     const last = products[lastIndex];
-
     const template = availableProducts.find(p => p.id === last.id);
     const category = template?.category || "Otros";
-
     setOpenCategory(category);
     setOpenInstanceIndex(lastIndex);
   }, [products.length, availableProducts]);
 
-  // 2. Focus cuando el input YA existe en el DOM
   useLayoutEffect(() => {
     if (openInstanceIndex === null) return;
-
     const input = additionInputRefs.current[openInstanceIndex];
-    if (input) {
-      input.focus();
-    }
+    if (input) input.focus();
   }, [openCategory, openInstanceIndex]);
-
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold">Productos Añadidos</h3>
+      <h3 className="text-lg font-semibold text-slate-200">Productos Añadidos</h3>
 
       {renderCategories.map(category => {
         const items = groupedProducts[category] || [];
@@ -236,8 +234,8 @@ export default function ProductList({ products, setProducts, availableAdditions 
                   <Icon />
                 </span>
                 <div>
-                  <div className="text-sm font-semibold text-left">{category}</div>
-                  <div className="text-xs text-gray-400 hidden sm:block text-left">Agrupado — toca para expandir</div>
+                  <div className="text-sm font-semibold text-left text-slate-200">{category}</div>
+                  <div className="text-xs text-gray-400 hidden sm:block text-left text-slate-400">Agrupado — toca para expandir</div>
                 </div>
               </div>
 
@@ -265,103 +263,111 @@ export default function ProductList({ products, setProducts, availableAdditions 
                               <Icon />
                             </div>
                             <div>
-                              <div className="font-medium">{product.name}</div>
+                              <div className="font-medium text-slate-200">{product.name}</div>
                               <div className="text-sm text-gray-400">{formatCLP(product.price)}</div>
                             </div>
                           </div>
 
                           <div className="flex items-center gap-3">
-                            <div className="flex items-center bg-gray-900 rounded-md overflow-hidden border border-gray-800">
-                              <button onClick={() => decrementProduct(product.id)} className="px-3 py-2 hover:bg-gray-800" aria-label="disminuir"><FaMinus /></button>
-                              <div className="px-4 py-2 text-sm font-semibold">{instances.length}</div>
-                              <button onClick={() => incrementProduct(product.id)} className="px-3 py-2 hover:bg-gray-800" aria-label="aumentar"><FaPlus /></button>
-                            </div>
+                            {isFruver ? (
+                              /* --- INPUT NUMÉRICO PARA FRUVER --- */
+                              <div className="flex items-center gap-2">
+                                <label className="text-[10px] uppercase text-gray-500 font-bold">Cant:</label>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={instances.length}
+                                  onChange={(e) => handleFruverQuantityChange(product.id, e.target.value)}
+                                  className="w-16 p-2 bg-gray-900 border border-gray-700 rounded-md text-center text-emerald-400 font-bold focus:ring-1 focus:ring-emerald-500 outline-none"
+                                />
+                              </div>
+                            ) : (
+                              /* --- SELECTOR +/- PARA RESTAURANTE --- */
+                              <div className="flex items-center bg-gray-900 rounded-md overflow-hidden border border-gray-800">
+                                <button type="button" onClick={() => decrementProduct(product.id)} className="px-3 py-2 hover:bg-gray-800 text-slate-300" aria-label="disminuir"><FaMinus /></button>
+                                <div className="px-4 py-2 text-sm font-semibold text-slate-200">{instances.length}</div>
+                                <button type="button" onClick={() => incrementProduct(product.id)} className="px-3 py-2 hover:bg-gray-800 text-slate-300" aria-label="aumentar"><FaPlus /></button>
+                              </div>
+                            )}
                           </div>
                         </div>
 
-                        <div className="mt-4 space-y-2">
-                          {instances.map((inst, i) => {
-                            const globalIndex = globalIndices[i];
-                            const isOpen = openInstanceIndex === globalIndex;
-                            return (
-                              <div key={globalIndex} className="bg-gray-900 border border-gray-800 rounded-md p-3">
-                                <div className="flex items-center justify-between gap-3">
-                                  <div className="flex items-center gap-3">
-                                    <div className="text-sm font-medium">#{i + 1}</div>
-                                    <div className="text-xs text-gray-400">
-                                      {inst.observation ? inst.observation : "Sin observacion"}
-                                    </div>
-
-                                    {inst.additions?.length > 0 && (
-                                      <div className="flex gap-2 ml-2 flex-wrap">
-                                        {inst.additions.slice(0, 3).map((a, ai) => (
-                                          <span key={`${globalIndex}-a-${ai}`} className="text-xs px-2 py-0.5 rounded-full bg-gradient-to-r from-white/5 to-white/2 text-white/90">
-                                            +{a.name}
-                                          </span>
-                                        ))}
-                                        {inst.additions.length > 3 && <span className="text-xs text-gray-400">+{inst.additions.length - 3} más</span>}
+                        {!isFruver && (
+                          <div className="mt-4 space-y-2">
+                            {instances.map((inst, i) => {
+                              const globalIndex = globalIndices[i];
+                              const isOpen = openInstanceIndex === globalIndex;
+                              return (
+                                <div key={globalIndex} className="bg-gray-900 border border-gray-800 rounded-md p-3">
+                                  <div className="flex items-center justify-between gap-3">
+                                    <div className="flex items-center gap-3">
+                                      <div className="text-sm font-medium text-slate-200">#{i + 1}</div>
+                                      <div className="text-xs text-gray-400">
+                                        {inst.observation ? inst.observation : "Sin observación"}
                                       </div>
-                                    )}
-                                  </div>
-
-                                  <div className="flex items-center gap-2">
-                                    <button onClick={() => toggleInstanceOpen(globalIndex)} className="px-2 py-1 rounded-md bg-gray-800 hover:bg-gray-700 flex items-center gap-2 text-xs">
-                                      {isOpen ? <><FaChevronUp /><span>Cerrar</span></> : <><FaChevronDown /><span>Abrir</span></>}
-                                    </button>
-
-                                    <button onClick={() => removeInstance(globalIndex)} className="text-red-400 hover:text-red-300 px-2" aria-label="Eliminar unidad">
-                                      <FaTimes />
-                                    </button>
-                                  </div>
-                                </div>
-
-                                {isOpen && (
-                                  <div className="mt-3 space-y-3">
-                                    <div>
-                                      <label className="text-xs text-gray-400">Observaciones</label>
-                                      <textarea value={inst.observation || ""} onChange={(e) => updateObservation(globalIndex, e.target.value)} placeholder="Ej: sin cebolla, bien cocido..." className="w-full mt-1 p-2 bg-[#050607] border border-gray-800 rounded-md text-sm" rows={2} />
-                                    </div>
-
-                                    <div>
-                                      <label className="text-xs text-gray-400">Agregar adición</label>
-                                      <input
-                                        ref={(el) => {
-                                          if (el) additionInputRefs.current[globalIndex] = el;
-                                        }}
-                                        type="text"
-                                        value={inst.additionSearchTerm || additionSearch[globalIndex] || ""}
-                                        onChange={(e) => handleAdditionSearch(globalIndex, e.target.value)}
-                                        placeholder="Buscar adición..."
-                                        className="w-full mt-1 p-2 bg-[#050607] border border-gray-800 rounded-md text-sm"
-                                      />
-
-                                      {inst.additionSuggestions?.length > 0 && (
-                                        <ul className="mt-2 bg-[#060708] border border-gray-800 rounded-md max-h-44 overflow-y-auto">
-                                          {inst.additionSuggestions.map(add => (
-                                            <li key={`${globalIndex}-s-${add.id}`} onClick={() => addAdditionToInstance(globalIndex, add)} className="p-2 hover:bg-gray-800 cursor-pointer flex justify-between">
-                                              <span>{add.name}</span>
-                                              <span className="text-sm text-gray-400">{formatCLP(add.price)}</span>
-                                            </li>
+                                      {inst.additions?.length > 0 && (
+                                        <div className="flex gap-2 ml-2 flex-wrap">
+                                          {inst.additions.slice(0, 3).map((a, ai) => (
+                                            <span key={`${globalIndex}-a-${ai}`} className="text-xs px-2 py-0.5 rounded-full bg-gradient-to-r from-white/5 to-white/2 text-white/90">
+                                              +{a.name}
+                                            </span>
                                           ))}
-                                        </ul>
+                                          {inst.additions.length > 3 && <span className="text-xs text-gray-400">+{inst.additions.length - 3} más</span>}
+                                        </div>
                                       )}
                                     </div>
-
-                                    <div className="flex gap-2 flex-wrap">
-                                      {inst.additions?.map((a, ai) => (
-                                        <div key={`${globalIndex}-chip-${ai}`} className="flex items-center gap-2 bg-gradient-to-r from-white/5 to-white/2 px-3 py-1 rounded-full">
-                                          <span className="text-sm">{a.name}</span>
-                                          <span className="text-xs text-gray-400">{formatCLP(a.price)}</span>
-                                          <button onClick={() => removeAddition(globalIndex, ai)} className="text-red-400 hover:text-red-300 text-sm"><FaTimes /></button>
-                                        </div>
-                                      ))}
+                                    <div className="flex items-center gap-2">
+                                      <button type="button" onClick={() => toggleInstanceOpen(globalIndex)} className="px-2 py-1 rounded-md bg-gray-800 hover:bg-gray-700 flex items-center gap-2 text-xs text-slate-300">
+                                        {isOpen ? <><FaChevronUp /><span>Cerrar</span></> : <><FaChevronDown /><span>Abrir</span></>}
+                                      </button>
+                                      <button type="button" onClick={() => removeInstance(globalIndex)} className="text-red-400 hover:text-red-300 px-2" aria-label="Eliminar unidad">
+                                        <FaTimes />
+                                      </button>
                                     </div>
                                   </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
+                                  {isOpen && (
+                                    <div className="mt-3 space-y-3">
+                                      <div>
+                                        <label className="text-xs text-gray-400">Observaciones</label>
+                                        <textarea value={inst.observation || ""} onChange={(e) => updateObservation(globalIndex, e.target.value)} placeholder="Ej: sin cebolla, bien cocido..." className="w-full mt-1 p-2 bg-[#050607] border border-gray-800 rounded-md text-sm text-slate-200" rows={2} />
+                                      </div>
+                                      <div>
+                                        <label className="text-xs text-gray-400">Agregar adición</label>
+                                        <input
+                                          ref={(el) => { if (el) additionInputRefs.current[globalIndex] = el; }}
+                                          type="text"
+                                          value={inst.additionSearchTerm || additionSearch[globalIndex] || ""}
+                                          onChange={(e) => handleAdditionSearch(globalIndex, e.target.value)}
+                                          placeholder="Buscar adición..."
+                                          className="w-full mt-1 p-2 bg-[#050607] border border-gray-800 rounded-md text-sm text-slate-200"
+                                        />
+                                        {inst.additionSuggestions?.length > 0 && (
+                                          <ul className="mt-2 bg-[#060708] border border-gray-800 rounded-md max-h-44 overflow-y-auto">
+                                            {inst.additionSuggestions.map(add => (
+                                              <li key={`${globalIndex}-s-${add.id}`} onClick={() => addAdditionToInstance(globalIndex, add)} className="p-2 hover:bg-gray-800 cursor-pointer flex justify-between">
+                                                <span className="text-slate-200">{add.name}</span>
+                                                <span className="text-sm text-gray-400">{formatCLP(add.price)}</span>
+                                              </li>
+                                            ))}
+                                          </ul>
+                                        )}
+                                      </div>
+                                      <div className="flex gap-2 flex-wrap">
+                                        {inst.additions?.map((a, ai) => (
+                                          <div key={`${globalIndex}-chip-${ai}`} className="flex items-center gap-2 bg-gradient-to-r from-white/5 to-white/2 px-3 py-1 rounded-full border border-white/10">
+                                            <span className="text-sm text-slate-200">{a.name}</span>
+                                            <span className="text-xs text-gray-400">{formatCLP(a.price)}</span>
+                                            <button type="button" onClick={() => removeAddition(globalIndex, ai)} className="text-red-400 hover:text-red-300 text-sm"><FaTimes /></button>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
