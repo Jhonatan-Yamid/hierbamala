@@ -48,14 +48,13 @@ const SalesForm = ({ saleId }) => {
   const { printTicket } = useTicketPrinter();
   const tableInputRef = useRef(null);
 
-  // 🚀 NUEVA CONSULTA: Traer datos del negocio al cargar
+  // Traer datos del negocio al cargar
   useEffect(() => {
     const fetchBusinessConfig = async () => {
       try {
-        const res = await fetch("/api/business"); // Asegúrate de tener esta ruta API
+        const res = await fetch("/api/business"); 
         if (res.ok) {
           const data = await res.json();
-          // Suponiendo que la API devuelve un objeto o array con el campo 'type'
           if (data && data.type) {
             setBusinessType(data.type.toLowerCase());
           }
