@@ -41,13 +41,15 @@ export async function POST(request) {
   try {
     const data = await request.json();
 
-    const { name, description, price, category, ingredients } = data;
+    const { name, description, price, category, ingredients, quantity, typeUnity } = data;
 
     const created = await db.product.create({
       data: {
         name,
         description,
         price: parseFloat(price),
+        quantity: quantity ? parseFloat(quantity) : null, // <-- Nuevo
+        typeUnity,
         category,
         ingredients: {
           create: ingredients.map((item) => ({
@@ -72,7 +74,7 @@ export async function PUT(request) {
   try {
     const data = await request.json();
 
-    const { id, name, description, price, category, ingredients } = data;
+    const { id, name, description, price, category, ingredients, quantity, typeUnity } = data;
 
     const updated = await db.product.update({
       where: { id: parseInt(id) },
@@ -80,6 +82,8 @@ export async function PUT(request) {
         name,
         description,
         price: parseFloat(price),
+        quantity: quantity ? parseFloat(quantity) : null, // <-- Nuevo
+        typeUnity,
         category,
         ingredients: {
           deleteMany: {}, // elimina todos los anteriores

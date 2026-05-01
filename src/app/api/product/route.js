@@ -5,38 +5,32 @@ export async function GET(request) {
   try {
     const url = new URL(request.url);
     const searchQuery = url.searchParams.get('search') || '';
-    const categoryQuery = url.searchParams.get('category'); // Obtiene el parámetro 'category'
+    const categoryQuery = url.searchParams.get('category');
 
-    const whereClause = {}; // Inicializa el objeto where para la consulta a la DB
+    const whereClause = {};
 
     if (searchQuery) {
       whereClause.name = {
-        contains: searchQuery, // Búsqueda por nombre del producto
-        mode: 'insensitive', // Opcional: para que la búsqueda no distinga mayúsculas/minúsculas
+        contains: searchQuery,
+        mode: 'insensitive',
       };
     }
 
-    // Lógica clave para incluir/excluir por categoría
     if (categoryQuery) {
-      // Si se proporciona una categoría específica (ej. ?category=adiciones)
-      // entonces filtra por esa categoría.
       whereClause.category = categoryQuery;
     } else {
-      // Si NO se proporciona el parámetro 'category' en la URL
-      // entonces EXCLUYE los productos que tienen la categoría 'adiciones'.
-      whereClause.category = {
-        not: 'Adiciones', // <-- ¡ESTE ES EL CAMBIO CLAVE!
-      };
+      whereClause.category = { not: 'Adiciones' };
     }
 
-    // Buscar productos según la cláusula 'where' construida dinámicamente
     const products = await db.product.findMany({
-      where: whereClause, // Usar el objeto 'whereClause'
+      where: whereClause,
       select: {
         id: true,
         name: true,
         price: true,
-        category: true, // Incluye la categoría para depuración o si la necesitas en el frontend
+        category: true,
+        quantity: true,    // <-- Nuevo campo
+        typeUnity: true,   // <-- Nuevo campo
       },
     });
 
@@ -58,8 +52,10 @@ export async function POST(request) {
       data: {
         name: data.name,
         description: data.description,
-        price: parseInt(data.price),
-        category: data.category, // Asegúrate de enviar la categoría al crear un producto
+        price: parseFloat(data.price),
+        category: data.category,
+        quantity: data.quantity ? parseFloat(data.quantity) : null, // <-- Nuevo
+        typeUnity: data.typeUnity,                                 // <-- Nuevo
         ingredients: {
           create: data.selectedIngredients.map(id => ({
             quantity: 1,
@@ -67,7 +63,6 @@ export async function POST(request) {
           }))
         }
       },
-
     });
 
     return NextResponse.json(createdProduct, { status: 201 });
@@ -79,8 +74,7 @@ export async function POST(request) {
 export async function PUT(request) {
   try {
     const data = await request.json();
-    const { id, name, description, price, selectedIngredients, category } = data; // Agrega 'category' aquí
-
+const { id, name, description, price, selectedIngredients, category, quantity, typeUnity } = data;
     if (!id) {
       return NextResponse.json({ message: 'ID del producto es requerido' }, { status: 400 });
     }
@@ -91,19 +85,20 @@ export async function PUT(request) {
         name,
         description,
         price: parseFloat(price),
-        category, // Actualiza la categoría
+        category,
+        quantity: quantity ? parseFloat(quantity) : null, // <-- Nuevo
+        typeUnity,                                        // <-- Nuevo
       }
     });
 
-    await db.productIngredient.deleteMany({
-      where: { productId: parseInt(id) }
-    });
-
+    // Limpiar y recrear ingredientes (manteniendo tu lógica original)
+    await db.productIngredient.deleteMany({ where: { productId: parseInt(id) } });
+    
     await Promise.all(
       selectedIngredients.map(async (ingredientId) => {
         await db.productIngredient.create({
           data: {
-            productId: parseInt(id),
+                productId: parseInt(id),
             ingredientId: parseInt(ingredientId),
             quantity: 1
           }

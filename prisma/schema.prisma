@@ -50,6 +50,8 @@ model Product {
   name        String
   description String?             @db.Text
   price       Float
+  quantity    Float?
+  typeUnity   String?
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
   category    String              @default("Desconocida")
