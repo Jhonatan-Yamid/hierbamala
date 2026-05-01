@@ -114,11 +114,11 @@ function ProductForm({ initialData, onSubmit, isNewProduct }) {
       price: parseFloat(formData.price),
       quantity: businessType === "fruver" ? parseFloat(formData.quantity) : null,
       typeUnity: businessType === "fruver" ? formData.typeUnity : "",
-      ingredients: businessType !== "fruver" 
+      ingredients: businessType !== "fruver"
         ? formData.ingredients.map((i) => ({
-            ingredientId: i.id,
-            quantity: Number(i.quantity),
-          }))
+          ingredientId: i.id,
+          quantity: Number(i.quantity),
+        }))
         : [],
     };
     await onSubmit(processedData);
@@ -202,8 +202,21 @@ function ProductForm({ initialData, onSubmit, isNewProduct }) {
           className="w-full p-2 mt-1 bg-gray-800 border border-gray-700 rounded-md"
         >
           <option value="">Seleccione una categoría</option>
-          <option value="Legumbre">Legumbre</option>
-          <option value="Mercado">Mercado</option>
+          <option value="Adiciones">Adiciones</option>
+          <option value="Asados">Asados</option>
+          <option value="Bebidas Calientes">Bebidas Calientes</option>
+          <option value="Bebidas Frías y Refrescantes">
+            Bebidas Frías y Refrescantes
+          </option>
+          <option value="Cerveza Artesanal">Cerveza Artesanal</option>
+          <option value="Cocktails de Autor">Cocktails de Autor</option>
+          <option value="Entradas">Entradas</option>
+          <option value="Hamburguesas Artesanales">
+            Hamburguesas Artesanales
+          </option>
+          <option value="Licores">Licores</option>
+          <option value="Los Platos de la Casa">Los Platos de la Casa</option>
+          <option value="Otros">Otros</option>
         </select>
       </div>
 

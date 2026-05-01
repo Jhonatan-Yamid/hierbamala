@@ -40,11 +40,11 @@ function DailySales() {
 
     const getOperationalDayRange = () => {
         const now = new Date();
-        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 13);
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 5);
         const endOfToday = new Date(startOfToday);
         endOfToday.setDate(endOfToday.getDate() + 1);
-        endOfToday.setHours(9, 0, 0, 0);
-        if (now < endOfToday && now.getHours() < 9) {
+        endOfToday.setHours(4, 0, 0, 0);
+        if (now < endOfToday && now.getHours() < 4) {
             startOfToday.setDate(startOfToday.getDate() - 1);
             endOfToday.setDate(endOfToday.getDate() - 1);
         }
