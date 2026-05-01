@@ -202,20 +202,8 @@ function ProductForm({ initialData, onSubmit, isNewProduct }) {
           className="w-full p-2 mt-1 bg-gray-800 border border-gray-700 rounded-md"
         >
           <option value="">Seleccione una categoría</option>
-          <option value="Adiciones">Adiciones</option>
-          <option value="Asados">Asados</option>
-          <option value="Bebidas Calientes">Bebidas Calientes</option>
-          <option value="Bebidas Frías y Refrescantes">
-            Bebidas Frías y Refrescantes
-          </option>
-          <option value="Cerveza Artesanal">Cerveza Artesanal</option>
-          <option value="Cocktails de Autor">Cocktails de Autor</option>
-          <option value="Entradas">Entradas</option>
-          <option value="Hamburguesas Artesanales">
-            Hamburguesas Artesanales
-          </option>
-          <option value="Licores">Licores</option>
-          <option value="Los Platos de la Casa">Los Platos de la Casa</option>
+          <option value="Adiciones">Mercado</option>
+          <option value="Asados">Fruver</option>
           <option value="Otros">Otros</option>
         </select>
       </div>

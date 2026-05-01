@@ -4,9 +4,9 @@
     "display": "standalone",
     "scope": "/dashboard",
     "start_url": "/dashboard",
-    "name": "Hierba Mala Gastrobar",
+    "name": "Raices Campesinas",
     "short_name": "Hierba Mala",
-    "description": "Para compartir y disfrutar - familia y amigos. Ofrecemos Entradas , Asados , comida mexicana, Antojos dulces, Cócteles de autor, Shots",
+    "description": "Del Campo a la mesa",
     "icons": [
         {
             "src": "/icon-192x192.png",
