@@ -2,10 +2,26 @@ import Link from "next/link";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import Image from "next/image";
-import MenuToggle from "./Menu"; // Importa el componente del cliente
+import MenuToggle from "./Menu";
+import db from "@/libs/db"; // Importamos tu conexión a la base de datos
 
 async function Navbar() {
   const session = await getServerSession(authOptions);
+  
+  // Consultamos la DB directamente en el servidor
+  let businessType = "restaurant";
+  try {
+    const business = await db.business.findFirst();
+    if (business && business.type) {
+      businessType = business.type.toLowerCase();
+    }
+  } catch (error) {
+    console.error("Error obteniendo businessType en Navbar:", error);
+  }
+
+  const inventoryPath = businessType === "fruver" 
+    ? "/dashboard/ProductInventory" 
+    : "/dashboard/IngredientInventory";
 
   return (
     <nav className="flex justify-between items-center bg-gray-950 text-white px-4 md:px-12 py-2 text-sm">
@@ -21,13 +37,10 @@ async function Navbar() {
         </Link>
       </div>
 
-      {/* Menú normal en pantallas grandes */}
-      <ul className="hidden md:flex gap-x-2 space-x-5">
+      <ul className="hidden md:flex gap-x-2 space-x-5 items-center">
         {!session?.user ? (
           <>
-            <li>
-              <Link href="/">Inicio</Link>
-            </li>
+            <li><Link href="/">Inicio</Link></li>
             <li>
               <Link
                 target="_blank"
@@ -44,36 +57,22 @@ async function Navbar() {
                 Login
               </Link>
             </li>
-
-            {/* <li>
-              <Link href="/auth/register">Register</Link>
-            </li> */}
           </>
         ) : (
           <>
             {session?.user?.image === 1 ? (
               <>
-                <li>
-                  <Link href="/dashboard/saleTable">Ventas</Link>
-                </li>
-                <li>
-                  <Link href="/dashboard/salesDaily">Reportes</Link>
-                </li>
-                <li>
-                  <Link href="/dashboard/IngredientInventory">Inventario</Link>
-                </li>
-                <li>
-                  <Link href="/dashboard/openChecklist">Apertura</Link>
-                </li>
-                <li>
-                  <Link href="/dashboard/providers">Proveedores</Link>
-                </li>
-                <li>
-                  <Link href="/dashboard/ingredients">Ingredientes</Link>
-                </li>
-                <li>
-                  <Link href="/dashboard/products">Productos</Link>
-                </li>
+                <li><Link href="/dashboard/saleTable">Ventas</Link></li>
+                <li><Link href="/dashboard/salesDaily">Reportes</Link></li>
+                <li><Link href={inventoryPath}>Inventario</Link></li>
+                <li><Link href="/dashboard/openChecklist">Apertura</Link></li>
+                <li><Link href="/dashboard/providers">Proveedores</Link></li>
+
+                {businessType !== "fruver" && (
+                  <li><Link href="/dashboard/ingredients">Ingredientes</Link></li>
+                )}
+
+                <li><Link href="/dashboard/products">Productos</Link></li>
                 <li>
                   <Link
                     href="/api/auth/signout"
@@ -85,16 +84,9 @@ async function Navbar() {
               </>
             ) : (
               <>
-              <li>
-                  <Link href="/dashboard/saleTable">Ventas</Link>
-                </li>
-                <li>
-                  <Link href="/dashboard/IngredientInventory">Inventario</Link>
-                </li>
-                <li>
-                  <Link href="/dashboard/openChecklist">Apertura</Link>
-                </li>
-                
+                <li><Link href="/dashboard/saleTable">Ventas</Link></li>
+                <li><Link href={inventoryPath}>Inventario</Link></li>
+                <li><Link href="/dashboard/openChecklist">Apertura</Link></li>
                 <li>
                   <Link
                     href="/api/auth/signout"
@@ -109,7 +101,6 @@ async function Navbar() {
         )}
       </ul>
 
-      {/* Menú hamburguesa en dispositivos móviles */}
       <MenuToggle session={session} />
     </nav>
   );
