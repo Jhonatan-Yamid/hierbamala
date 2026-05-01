@@ -69,11 +69,25 @@ export async function POST(request) {
   }
 }
 
-// Actualizar producto con ingredientes
 export async function PUT(request) {
   try {
     const data = await request.json();
 
+    // SI ES UNA ACTUALIZACIÓN MASIVA DE INVENTARIO (Array)
+    if (Array.isArray(data)) {
+      const updates = data.map((item) =>
+        db.product.update({
+          where: { id: parseInt(item.id) },
+          data: { 
+            quantity: item.quantity === "Insuficiente" ? null : parseFloat(item.quantity) 
+          },
+        })
+      );
+      await Promise.all(updates);
+      return NextResponse.json({ message: "Inventario actualizado" }, { status: 200 });
+    }
+
+    // SI ES UNA ACTUALIZACIÓN DE UN SOLO PRODUCTO (Objeto original)
     const { id, name, description, price, category, ingredients, quantity, typeUnity } = data;
 
     const updated = await db.product.update({
@@ -82,18 +96,16 @@ export async function PUT(request) {
         name,
         description,
         price: parseFloat(price),
-        quantity: quantity ? parseFloat(quantity) : null, // <-- Nuevo
+        quantity: quantity ? parseFloat(quantity) : null,
         typeUnity,
         category,
-        ingredients: {
-          deleteMany: {}, // elimina todos los anteriores
+        ingredients: ingredients ? {
+          deleteMany: {},
           create: ingredients.map((item) => ({
-            ingredient: {
-              connect: { id: item.ingredientId },
-            },
+            ingredient: { connect: { id: item.ingredientId } },
             quantity: item.quantity,
           })),
-        },
+        } : undefined,
       },
     });
 

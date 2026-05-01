@@ -10,11 +10,25 @@ const ProductInventory = () => {
   const [collapsed, setCollapsed] = useState({});
 
   const daysAgo = (date) => {
+    if (!date) return 0;
+
+    // Convertimos el formato "YYYY-MM-DD HH:mm:ss" a "YYYY-MM-DDTHH:mm:ss" 
+    // para que sea compatible con todos los navegadores
+    const dateString = typeof date === 'string' ? date.replace(" ", "T") : date;
+
+    const lastUpdated = new Date(dateString);
+
+    // Si la fecha sigue siendo inválida, retornamos 0
+    if (isNaN(lastUpdated.getTime())) return 0;
+
     const today = new Date();
-    const lastUpdated = new Date(date);
     today.setHours(0, 0, 0, 0);
-    lastUpdated.setHours(0, 0, 0, 0);
-    return Math.floor((today - lastUpdated) / (1000 * 3600 * 24));
+
+    const compareDate = new Date(lastUpdated);
+    compareDate.setHours(0, 0, 0, 0);
+
+    const diffTime = today - compareDate;
+    return Math.max(0, Math.floor(diffTime / (1000 * 3600 * 24)));
   };
 
   // =========================================================
@@ -23,23 +37,22 @@ const ProductInventory = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await fetch("/api/product");
+        const response = await fetch("/api/products");
         const data = await response.json();
+        console.log(data)
 
         if (Array.isArray(data)) {
           setProducts(data);
 
           const grouped = data.reduce((acc, product) => {
-            const { category } = product;
-            const catName = category || "Sin Categoría";
-            if (!acc[catName]) acc[catName] = [];
-            acc[catName].push(product);
+            const category = product.category || "Desconocida";
+            if (!acc[category]) acc[category] = [];
+            acc[category].push(product);
             return acc;
           }, {});
 
           setGroupedProducts(grouped);
 
-          // Inicializa todas colapsadas
           const initState = {};
           Object.keys(grouped).forEach((cat) => (initState[cat] = true));
           setCollapsed(initState);
@@ -59,8 +72,8 @@ const ProductInventory = () => {
     const lower = searchTerm.toLowerCase();
     const result = {};
 
-    Object.keys(groupedProducts).forEach((cat) => {
-      result[cat] = groupedProducts[cat].filter((prod) =>
+    Object.keys(groupedProducts).forEach((category) => {
+      result[category] = groupedProducts[category].filter((prod) =>
         prod.name.toLowerCase().includes(lower)
       );
     });
@@ -74,20 +87,24 @@ const ProductInventory = () => {
   useEffect(() => {
     if (searchTerm.trim() === "") {
       const allClosed = {};
-      Object.keys(groupedProducts).forEach((cat) => (allClosed[cat] = true));
+      Object.keys(groupedProducts).forEach(
+        (cat) => (allClosed[cat] = true)
+      );
       setCollapsed(allClosed);
       return;
     }
 
     const expanded = {};
-    Object.keys(groupedProducts).forEach((cat) => {
-      expanded[cat] = groupedProducts[cat].some((prod) =>
+    Object.keys(groupedProducts).forEach((category) => {
+      expanded[category] = groupedProducts[category].some((prod) =>
         prod.name.toLowerCase().includes(searchTerm.toLowerCase())
-      ) ? false : true;
+      )
+        ? false
+        : true;
     });
 
     setCollapsed(expanded);
-  }, [searchTerm, groupedProducts]);
+  }, [searchTerm]);
 
   // =========================================================
   // HANDLE CHANGE & BLUR
@@ -96,14 +113,16 @@ const ProductInventory = () => {
     const newValue = e.target.value;
 
     setProducts((prev) =>
-      prev.map((p) => (p.id === productId ? { ...p, quantity: newValue } : p))
+      prev.map((prod) =>
+        prod.id === productId ? { ...prod, quantity: newValue } : prod
+      )
     );
 
     setGroupedProducts((prev) => {
       const updated = {};
       Object.keys(prev).forEach((cat) => {
-        updated[cat] = prev[cat].map((p) =>
-          p.id === productId ? { ...p, quantity: newValue } : p
+        updated[cat] = prev[cat].map((prod) =>
+          prod.id === productId ? { ...prod, quantity: newValue } : prod
         );
       });
       return updated;
@@ -118,24 +137,26 @@ const ProductInventory = () => {
 
   const handleQuantityBlur = (e, productId) => {
     const finalValue = e.target.value.trim();
-    
-    // Validamos que sea un número válido o esté vacío
-    if (finalValue !== "" && isNaN(parseFloat(finalValue))) {
-        alert("Por favor, ingresa un número válido.");
-        return;
+
+    if (!/^(\d+(\.\d{0,2})?|Insuficiente)?$/.test(finalValue)) {
+      alert("Por favor, ingresa un valor válido (número o 'Insuficiente').");
+      return;
     }
 
-    const parsedValue = finalValue === "" ? null : parseFloat(finalValue);
+    const parsedValue =
+      finalValue === "Insuficiente" ? null : parseFloat(finalValue) || 0;
 
     setProducts((prev) =>
-      prev.map((p) => (p.id === productId ? { ...p, quantity: parsedValue } : p))
+      prev.map((prod) =>
+        prod.id === productId ? { ...prod, quantity: parsedValue } : prod
+      )
     );
 
     setGroupedProducts((prev) => {
       const updated = {};
       Object.keys(prev).forEach((cat) => {
-        updated[cat] = prev[cat].map((p) =>
-          p.id === productId ? { ...p, quantity: parsedValue } : p
+        updated[cat] = prev[cat].map((prod) =>
+          prod.id === productId ? { ...prod, quantity: parsedValue } : prod
         );
       });
       return updated;
@@ -143,7 +164,7 @@ const ProductInventory = () => {
   };
 
   // =========================================================
-  // SUBMIT (Actualización masiva)
+  // SUBMIT
   // =========================================================
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -152,61 +173,57 @@ const ProductInventory = () => {
       .filter(([, modified]) => modified)
       .map(([id]) => {
         const product = products.find((p) => p.id === id);
-        // Enviamos el objeto completo como espera tu PUT
-        return { 
-            ...product,
-            quantity: product.quantity === "" ? null : parseFloat(product.quantity)
-        };
+        // Enviamos el valor actual, si es "Insuficiente" la API lo manejará como null
+        return { id, quantity: product.quantity };
       });
 
     if (modifiedData.length === 0) {
-        alert("No hay cambios para guardar.");
-        return;
+      alert("No hay cambios para guardar.");
+      return;
     }
 
     try {
-      // Nota: Tu API actualiza de a uno. Para masivo podrías iterar o ajustar el API.
-      // Aquí iteramos sobre los modificados llamando a tu PUT:
-      const promises = modifiedData.map(prod => 
-        fetch("/api/product", {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(prod),
-        })
-      );
+      const response = await fetch("/api/products", { // Confirmado: api/products
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(modifiedData),
+      });
 
-      const results = await Promise.all(promises);
-      
-      if (results.every(res => res.ok)) {
-        alert("Inventario de productos actualizado exitosamente.");
-        setModifiedFields(new Map());
+      if (response.ok) {
+        alert("Inventario actualizado exitosamente.");
+        setModifiedFields(new Map()); // Limpiar estados de modificación
         window.location.reload();
       } else {
-        alert("Hubo un error al actualizar algunos productos.");
+        const errorData = await response.json();
+        alert(`Error: ${errorData.message}`);
       }
     } catch (error) {
       console.error("Error enviando datos:", error);
     }
   };
-
   return (
-    <div className="p-4 bg-gray-950 min-h-screen text-slate-200">
-      <h1 className="text-2xl font-bold mb-4">Inventario de Productos</h1>
+    <div className="p-4">
+      <h1 className="text-2xl font-bold mb-4 text-slate-200">
+        Inventario de Productos
+      </h1>
 
       <input
         type="text"
-        placeholder="Buscar producto por nombre..."
-        className="mb-6 p-2 rounded border border-gray-700 text-slate-200 bg-gray-900 w-full focus:border-blue-500 outline-none"
+        placeholder="Buscar producto..."
+        className="mb-6 p-2 rounded border border-white text-slate-200 bg-gray-700 w-full"
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
       />
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-3">
         {Object.keys(groupedProducts).map((category) => {
           const productsInCategory = filteredGrouped[category];
 
           return (
-            <div key={category} className="p-3 rounded-lg border border-gray-800 bg-gray-900">
+            <div
+              key={category}
+              className="p-3 rounded-lg border border-white bg-gray-950"
+            >
               <div
                 className="flex justify-between items-center cursor-pointer py-2"
                 onClick={() =>
@@ -216,52 +233,66 @@ const ProductInventory = () => {
                   }))
                 }
               >
-                <h2 className="text-md font-semibold uppercase tracking-wider text-blue-400">
+                <h2 className="text-slate-200 text-md font-semibold">
                   {category}
                 </h2>
-                <span className="text-slate-500 text-sm">
+
+                <span className="text-slate-300 text-sm">
                   {collapsed[category] ? "▶" : "▼"}
                 </span>
               </div>
 
               <div
-                className={`transition-all duration-300 ${
-                  collapsed[category] ? "max-h-0 overflow-hidden opacity-0" : "max-h-none opacity-100"
-                }`}
+                className={`transition-all duration-300 ${collapsed[category]
+                    ? "max-h-0 overflow-hidden opacity-0"
+                    : "max-h-none opacity-100"
+                  }`}
               >
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 py-3">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 py-2">
                   {productsInCategory.length === 0 ? (
-                    <p className="text-slate-500 text-sm col-span-full italic">
-                      No hay productos en esta categoría...
+                    <p className="text-slate-500 text-sm col-span-full px-2">
+                      No hay coincidencias...
                     </p>
                   ) : (
                     productsInCategory.map((product) => {
-                      const isModified = modifiedFields.get(product.id) || false;
+                      const isModified =
+                        modifiedFields.get(product.id) || false;
+
                       const daysSinceUpdate = daysAgo(product.updatedAt);
 
                       return (
-                        <div key={product.id} className="bg-gray-800 p-3 rounded-md border border-gray-700">
-                          <div className="flex justify-between items-start mb-2">
-                            <div className={`text-sm font-bold ${isModified ? "text-yellow-400" : "text-slate-200"}`}>
-                              {product.name}
-                              <div className="text-[0.65rem] font-normal text-slate-400 uppercase">
-                                {product.typeUnity || "Unid."}
-                              </div>
+                        <div key={product.id} className="flex flex-col">
+                          <div className="flex justify-between items-center mb-1">
+                            <div
+                              className={`text-sm font-medium ${isModified ? "text-red-500" : "text-slate-300"
+                                }`}
+                            >
+                              {product.name}{" "}
+                              <small className="text-[0.6rem] text-slate-400">
+                                {product.typeUnity}
+                              </small>
                             </div>
-                            <small className="text-[0.6rem] text-slate-500 bg-gray-950 px-1 rounded">
-                              {daysSinceUpdate === 0 ? "HOY" : `${daysSinceUpdate}d`}
+
+                            <small className="text-[0.65rem] text-slate-400">
+                              {daysSinceUpdate === 0
+                                ? "(Hoy)"
+                                : `(${daysSinceUpdate} días)`}
                             </small>
                           </div>
 
                           <input
                             type="text"
-                            value={product.quantity ?? ""}
-                            placeholder="0.00"
-                            onChange={(e) => handleQuantityChange(e, product.id)}
+                            value={
+                              product.quantity === null
+                                ? "Insuficiente"
+                                : product.quantity
+                            }
+                            onChange={(e) =>
+                              handleQuantityChange(e, product.id)
+                            }
                             onBlur={(e) => handleQuantityBlur(e, product.id)}
-                            className={`w-full p-2 rounded bg-gray-950 text-slate-200 text-center font-mono ${
-                              isModified ? "border-2 border-yellow-500" : "border border-gray-700"
-                            }`}
+                            className={`border p-2 rounded bg-gray-700 text-slate-200 ${isModified ? "border-red-500" : "border-white"
+                              }`}
                           />
                         </div>
                       );
@@ -273,14 +304,12 @@ const ProductInventory = () => {
           );
         })}
 
-        <div className="sticky bottom-4 flex justify-end">
-          <button
-            type="submit"
-            className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-transform active:scale-95"
-          >
-            Guardar Cambios
-          </button>
-        </div>
+        <button
+          type="submit"
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 mt-4"
+        >
+          Enviar
+        </button>
       </form>
     </div>
   );
