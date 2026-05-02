@@ -24,29 +24,15 @@ import {
  */
 
 const CATEGORY_ORDER = [
-  "Entradas",
-  "Los Platos de la Casa",
-  "Asados",
-  "Hamburguesas Artesanales",
-  "Bebidas Calientes",
-  "Bebidas Frías y Refrescantes",
-  "Cerveza Artesanal",
-  "Cocktails de Autor",
-  "Licores",
+  "Fruver",
+  "Mercado",
   "Otros",
 ];
 
 const CATEGORY_META = {
-  Asados: { icon: FaDrumstickBite, color: "from-amber-600 to-rose-600" },
-  "Bebidas Calientes": { icon: FaCoffee, color: "from-yellow-600 to-amber-400" },
-  "Bebidas Frías y Refrescantes": { icon: FaGlassCheers, color: "from-cyan-500 to-blue-500" },
-  "Cerveza Artesanal": { icon: FaBeer, color: "from-amber-700 to-yellow-500" },
-  "Cocktails de Autor": { icon: FaCocktail, color: "from-pink-500 to-purple-500" },
-  Entradas: { icon: FaUtensils, color: "from-red-800 to-yellow-600" },
-  "Hamburguesas Artesanales": { icon: FaHamburger, color: "from-red-600 to-orange-400" },
-  Licores: { icon: FaWineBottle, color: "from-violet-700 to-red-500" },
-  "Los Platos de la Casa": { icon: FaBoxes, color: "from-emerald-700 to-emerald-400" },
-  Otros: { icon: FaStickyNote, color: "from-gray-600 to-gray-400" },
+  "Mercado": { icon: FaUtensils, color: "from-red-800 to-yellow-600" },
+  "Fruver": { icon: FaBoxes, color: "from-emerald-700 to-emerald-400" },
+  "Otros": { icon: FaStickyNote, color: "from-gray-600 to-gray-400" },
 };
 
 const formatCLP = (value) =>

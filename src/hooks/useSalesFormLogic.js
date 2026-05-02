@@ -5,31 +5,15 @@ import { useEffect, useState, useCallback } from "react";
 
 // ─── Orden de categorías ─────────────────────────────────────────────────────
 const TICKET_CATEGORY_ORDER = [
-  "Entradas",
-  "Los Platos de la Casa",
-  "Asados",
-  "Hamburguesas Artesanales",
-  "Bebidas Calientes",
-  "Bebidas Frías y Refrescantes",
-  "Cerveza Artesanal",
-  "Cocktails de Autor",
-  "Licores",
-  "Adiciones",
+  "Fruver",
+  "Mercado",
   "Otros",
 ];
 
 const CATEGORY_LABEL = {
-  "Entradas":                       "ENTRADAS",
-  "Los Platos de la Casa":          "PLATOS DE LA CASA",
-  "Asados":                         "ASADOS",
-  "Hamburguesas Artesanales":       "HAMBURGUESAS",
-  "Bebidas Calientes":              "BEBIDAS CALIENTES",
-  "Bebidas Frías y Refrescantes":   "BEBIDAS FRÍAS",
-  "Cerveza Artesanal":              "CERVEZAS",
-  "Cocktails de Autor":             "COCKTAILS",
-  "Licores":                        "LICORES",
-  "Adiciones":                      "ADICIONES",
-  "Otros":                          "OTROS",
+  "Fruver":                       "FRUVER",
+  "Mercado":                      "MERCADO",
+  "Otros":                        "OTROS",
 };
 
 const formatCLP = (value) =>

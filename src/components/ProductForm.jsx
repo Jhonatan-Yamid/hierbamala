@@ -202,8 +202,8 @@ function ProductForm({ initialData, onSubmit, isNewProduct }) {
           className="w-full p-2 mt-1 bg-gray-800 border border-gray-700 rounded-md"
         >
           <option value="">Seleccione una categoría</option>
-          <option value="Adiciones">Mercado</option>
-          <option value="Asados">Fruver</option>
+          <option value="Mercado">Mercado</option>
+          <option value="Fruver">Fruver</option>
           <option value="Otros">Otros</option>
         </select>
       </div>
