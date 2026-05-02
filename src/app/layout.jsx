@@ -6,7 +6,7 @@ import Providers from "./Providers";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "Hierba Mala",
+  title: "Raices Campesinas",
   description: "Para compartir y disfrutar - familia y amigos. Ofrecemos Entradas , Asados , comida mexicana, Antojos dulces, Cócteles de autor, Shots",
   manifest:"/manifest.json",
   icons: {

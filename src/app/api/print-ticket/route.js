@@ -24,7 +24,7 @@ export async function POST(request) {
       .align('CT')
       .style('B')
       .size(1, 1)
-      .text('Hierba Mala Gastrobar')
+      .text('Raices Campesinas')
       .text('--------------------------')
       .align('LT');
 

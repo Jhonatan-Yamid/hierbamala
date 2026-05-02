@@ -176,7 +176,7 @@ const useSalesFormLogic = (saleId) => {
     const date = new Date();
     const sep = "─────────────────────────────────";
 
-    let ticket = `    HIERBA MALA GASTROBAR\n`;
+    let ticket = `    Raices Campesinas\n`;
     ticket += `${sep}\n`;
     ticket += `Fecha: ${date.toLocaleDateString("es-CO")}  ${date.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}\n`;
     ticket += `Mesa: ${tableNumber || "-"}\n`;
