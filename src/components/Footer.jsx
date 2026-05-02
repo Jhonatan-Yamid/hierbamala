@@ -22,20 +22,12 @@ export default function Footer() {
       <div>
         <ul>
           <li className="font-bold">Contactanos</li>
-          <li>hierbamala.gastrobar@gmail.com</li>
-          <li>+57 (324) 640-5015</li>
-          <a href="https://www.instagram.com/hierbamala.gastrobar/">
-            @hierbamala.gastrobar
-          </a>
+          <li>raicescampesinasfruver@gmail.com</li>
+          <li>+57 (321) 828-0162</li>
         </ul>
       </div>
       <div>
-        <a
-          href="#book"
-          className="font-bold text-white px-3 py-1 rounded border-white text-sm border-2"
-        >
-          Nuestro menú
-        </a>
+        <h1>Domicilio Gratis</h1>
       </div>
     </div>
   );

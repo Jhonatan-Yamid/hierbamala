@@ -6,10 +6,10 @@ const Carousel = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const slidesContent = [
     {
-      title: "Prueba nuestros deliciosos",
+      title: "Precios Especiales",
       buttonText: "Nuestro Menú",
       imageSrc: "Chicharron.jpg",
-      subtitle: "Asados al Carbon desde $16.000"
+      subtitle: "Y la mejor calidad"
     },
     // {
     //   title: "Your bond where it must be:",
@@ -56,9 +56,6 @@ const Carousel = () => {
             <div className="absolute top-[60%] left-1/4 transform -translate-x-1/2 -translate-y-1/2 text-start w-2/4 md:w-2/6 sm:max-w-lg mx-auto">
               <div className="p-8 rounded-lg text-white">
                 <h1 className="text-sm md:text-4xl mb-4 md:mb-8">{slide.title} <div className="font-bold">{slide.subtitle}</div></h1>
-                <a href="#book" className="border-2 cursor-pointer text-white font-semibold px-2 md:px-6 py-1 md:py-3 rounded-xl hover:bg-sky-900 transition duration-300 text-xs md:text-xl">
-                  {slide.buttonText}
-                </a>
               </div>
             </div>
           </div>

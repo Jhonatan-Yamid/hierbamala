@@ -7,10 +7,10 @@ export default function SectionAbout() {
       <StepIcon icon={<FaCocktail />} number="2" title="Service details" />
       <h2 className=" text-slate-200 font-bold text-3xl pb-5">Sobre nosotros</h2>
       <p className="pb-2">
-       Somos un Gastrobar cuya unica mision es contarte una historia en cada ´ñatp
+       Encuentra siempre la mejor variedad y el mejor precio en frutas y verduras
       </p>
       <p>
-        Resaltando siemnpre lo mejor de los priductos locales siempres frescos hasta tu mesa
+        Resaltando siemnpre lo mejor de los priductos locales siempres frescos
       </p>
     </div>
   );
