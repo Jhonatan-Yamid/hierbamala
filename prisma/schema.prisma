@@ -106,7 +106,7 @@ model SaleProduct {
   id          String                @id @default(cuid())
   saleId      Int
   productId   Int
-  quantity    Int
+  quantity    Float
   observation String?
   product     Product               @relation(fields: [productId], references: [id])
   sale        Sale                  @relation(fields: [saleId], references: [id])

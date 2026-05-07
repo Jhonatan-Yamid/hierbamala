@@ -76,25 +76,38 @@ export default function ProductList({ products, setProducts, availableAdditions 
   }, [groupedProducts]);
 
   // --- Lógica de Cantidad para Fruver ---
+  // --- Lógica de Cantidad para Fruver (Actualizada) ---
   const handleFruverQuantityChange = (productId, newQuantity) => {
-    const qty = parseInt(newQuantity) || 0;
+    // 1. Evitar que se borre el producto mientras el usuario limpia el input
+    if (newQuantity === "") return;
+
+    const qty = parseFloat(newQuantity);
     const template = availableProducts.find((p) => p.id === productId) || {};
-    
+
     setProducts((prev) => {
-      const filtered = prev.filter(p => p.id !== productId);
-      const newInstances = Array.from({ length: qty }, () => ({
+      // Filtramos los demás productos para no perderlos
+      const otherProducts = prev.filter((p) => p.id !== productId);
+
+      // Si la cantidad es 0 o menor, simplemente lo eliminamos
+      if (qty <= 0) return otherProducts;
+
+      // 2. Para Fruver, NO creamos múltiples instancias. 
+      // Creamos UN SOLO objeto que contiene el valor decimal.
+      const fruverInstance = {
         id: productId,
         name: template.name || "Producto",
         price: template.price || 0,
-        observation: "",
+        observation: "", // En Fruver suele ser una sola observación por peso
         additions: [],
         additionSearchTerm: "",
         additionSuggestions: [],
-      }));
-      return [...filtered, ...newInstances];
+        quantity: qty, // <--- Aquí se guarda el decimal exacto (ej: 1.5)
+        isDecimal: true // Flag útil para cálculos posteriores
+      };
+
+      return [...otherProducts, fruverInstance];
     });
   };
-
   const incrementProduct = (productId) => {
     const template = availableProducts.find((p) => p.id === productId) || {};
     const instance = {
@@ -258,13 +271,17 @@ export default function ProductList({ products, setProducts, availableAdditions 
                             {isFruver ? (
                               /* --- INPUT NUMÉRICO PARA FRUVER --- */
                               <div className="flex items-center gap-2">
-                                <label className="text-[10px] uppercase text-gray-500 font-bold">Cant:</label>
+                                <label className="text-[10px] uppercase text-gray-500 font-bold">Peso/Cant:</label>
                                 <input
                                   type="number"
                                   min="0"
-                                  value={instances.length}
+                                  step="0.01" // Permite dos decimales (ej: 1.25 kg)
+                                  /* Buscamos la instancia del producto. Como en Fruver solo hay una, 
+                                     accedemos a la propiedad .quantity directamente. 
+                                  */
+                                  value={products.find(p => p.id === product.id)?.quantity || ""}
                                   onChange={(e) => handleFruverQuantityChange(product.id, e.target.value)}
-                                  className="w-16 p-2 bg-gray-900 border border-gray-700 rounded-md text-center text-emerald-400 font-bold focus:ring-1 focus:ring-emerald-500 outline-none"
+                                  className="w-24 p-2 bg-gray-900 border border-gray-700 rounded-md text-center text-emerald-400 font-bold focus:ring-1 focus:ring-emerald-500 outline-none"
                                 />
                               </div>
                             ) : (
