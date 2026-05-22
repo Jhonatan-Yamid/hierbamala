@@ -28,7 +28,7 @@ async function Navbar() {
       <div className="hidden md:flex">
         <Link href="/dashboard">
           <Image
-            src="/logo-white.png"
+            src = {process.env.NEXT_PUBLIC_WHITE_LOGO}
             alt="Logo"
             width={100}
             height={100}

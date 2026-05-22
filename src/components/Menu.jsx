@@ -52,7 +52,7 @@ const Menu = ({ session }) => {
           <div className="flex justify-between items-center p-4">
             <Link href="/dashboard">
               <Image
-                src="/logo-white.png"
+                src={process.env.NEXT_PUBLIC_WHITE_LOGO}
                 alt="Logo"
                 width={180}
                 height={180}

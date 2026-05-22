@@ -5,7 +5,7 @@ export default function Footer() {
     <div className=" bg-zinc-950 flex flex-row text-white justify-around items-center text-sm font-light flex-wrap footer py-5">
       <div>
         <Image
-          src="/logo-white.png"
+          src={process.env.NEXT_PUBLIC_WHITE_LOGO}
           alt="Logo"
           width={120}
           height={120}
