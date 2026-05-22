@@ -1,3 +1,5 @@
+//🚨🚨🚨ESTE ES SOLO USADO POR EL HOOK DE USESALEFORMLOGIC PARA LOOS AVAIBLE PRODUCTOS AND ADDITIONS
+
 import { NextResponse } from 'next/server';
 import db from '@/libs/db';
 
@@ -29,8 +31,9 @@ export async function GET(request) {
         name: true,
         price: true,
         category: true,
-        quantity: true,    // <-- Nuevo campo
-        typeUnity: true,   // <-- Nuevo campo
+        quantity: true,
+        barcode: true,
+        typeUnity: true,
       },
     });
 
@@ -74,7 +77,7 @@ export async function POST(request) {
 export async function PUT(request) {
   try {
     const data = await request.json();
-const { id, name, description, price, selectedIngredients, category, quantity, typeUnity } = data;
+    const { id, name, description, price, selectedIngredients, category, quantity, typeUnity } = data;
     if (!id) {
       return NextResponse.json({ message: 'ID del producto es requerido' }, { status: 400 });
     }
@@ -93,12 +96,12 @@ const { id, name, description, price, selectedIngredients, category, quantity, t
 
     // Limpiar y recrear ingredientes (manteniendo tu lógica original)
     await db.productIngredient.deleteMany({ where: { productId: parseInt(id) } });
-    
+
     await Promise.all(
       selectedIngredients.map(async (ingredientId) => {
         await db.productIngredient.create({
           data: {
-                productId: parseInt(id),
+            productId: parseInt(id),
             ingredientId: parseInt(ingredientId),
             quantity: 1
           }

@@ -41,7 +41,7 @@ export async function POST(request) {
   try {
     const data = await request.json();
 
-    const { name, description, price, category, ingredients, quantity, typeUnity } = data;
+    const { name, description, price, category, ingredients, quantity, typeUnity, barcode } = data;
 
     const created = await db.product.create({
       data: {
@@ -50,6 +50,7 @@ export async function POST(request) {
         price: parseFloat(price),
         quantity: quantity ? parseFloat(quantity) : null, // <-- Nuevo
         typeUnity,
+        barcode: barcode,
         category,
         ingredients: {
           create: ingredients.map((item) => ({
@@ -88,7 +89,7 @@ export async function PUT(request) {
     }
 
     // SI ES UNA ACTUALIZACIÓN DE UN SOLO PRODUCTO (Objeto original)
-    const { id, name, description, price, category, ingredients, quantity, typeUnity } = data;
+    const { id, name, description, price, category, ingredients, quantity, typeUnity, barcode } = data;
 
     const updated = await db.product.update({
       where: { id: parseInt(id) },
@@ -98,6 +99,7 @@ export async function PUT(request) {
         price: parseFloat(price),
         quantity: quantity ? parseFloat(quantity) : null,
         typeUnity,
+        barcode: barcode,
         category,
         ingredients: ingredients ? {
           deleteMany: {},

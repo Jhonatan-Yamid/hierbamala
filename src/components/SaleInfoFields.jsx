@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useEffect } from "react";
 import { FaChair, FaTruck, FaGamepad, FaStickyNote } from "react-icons/fa";
 
 const SaleInfoFields = ({
@@ -16,7 +16,12 @@ const SaleInfoFields = ({
   businessType
 }) => {
   const isFruver = businessType === "fruver";
-
+  useEffect(() => {
+    if (isFruver && tableNumber !== "Mostrador") {
+      setTableNumber("Mostrador");
+    }
+  }, [isFruver, tableNumber, setTableNumber]);
+ 
   return (
     <div className="w-full bg-[#0b0f12] border border-gray-800 rounded-2xl p-4 md:p-6 space-y-6 shadow-sm">
       <h3 className="text-lg font-semibold text-gray-100">

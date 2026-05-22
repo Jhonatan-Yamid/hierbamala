@@ -23,6 +23,7 @@ export async function GET() {
         return {
           id: product.id,
           stock: ingredientQty ?? 0,
+          barcode: product.barcode,
         };
       });
 
