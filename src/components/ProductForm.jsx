@@ -9,6 +9,7 @@ function ProductForm({ initialData, onSubmit, isNewProduct }) {
     category: "",
     quantity: "",
     typeUnity: "",
+    barcode: "",
     ingredients: [],
     ...initialData,
   });
@@ -66,6 +67,15 @@ function ProductForm({ initialData, onSubmit, isNewProduct }) {
       ...prev,
       [name]: value,
     }));
+  };
+
+  const handleBarcodeKeyDown = (e) => {
+    if (e.key === "Enter") {
+      // Evitamos que el formulario se envíe
+      e.preventDefault();
+      // Opcional: podrías mover el foco al siguiente campo aquí
+      console.log("Código escaneado, envío bloqueado.");
+    }
   };
 
   const handleSearchChange = (e) => {
@@ -160,6 +170,18 @@ function ProductForm({ initialData, onSubmit, isNewProduct }) {
           name="price"
           value={formData.price}
           onChange={handleChange}
+          className="w-full p-2 mt-1 bg-gray-800 border border-gray-700 rounded-md"
+        />
+      </div>
+
+       <div>
+        <label className="block text-sm font-medium">Código de Barras</label>
+        <input
+          type="number"
+          name="barcode"
+          value={formData.barcode}
+          onChange={handleChange}
+          onKeyDown={handleBarcodeKeyDown}
           className="w-full p-2 mt-1 bg-gray-800 border border-gray-700 rounded-md"
         />
       </div>
