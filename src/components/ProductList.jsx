@@ -2,14 +2,6 @@
 import React, { useState, useMemo, useLayoutEffect, useRef } from "react";
 
 import {
-  FaDrumstickBite,
-  FaCoffee,
-  FaGlassCheers,
-  FaBeer,
-  FaCocktail,
-  FaUtensils,
-  FaHamburger,
-  FaWineBottle,
   FaBoxes,
   FaStickyNote,
   FaChevronDown,
@@ -17,6 +9,7 @@ import {
   FaPlus,
   FaMinus,
   FaTimes,
+  FaUtensils,
 } from "react-icons/fa";
 
 /**
@@ -77,39 +70,51 @@ export default function ProductList({ products, setProducts, availableAdditions 
     return [...CATEGORY_ORDER.filter(c => groupedProducts[c] !== undefined), ...extra];
   }, [groupedProducts]);
 
-  // --- Lógica de Cantidad para Fruver ---
-  // --- Lógica de Cantidad para Fruver (Actualizada) ---
+  // --- Lógica de Cantidad para Fruver (Corregida para permitir borrado) ---
   const handleFruverQuantityChange = (productId, newQuantity) => {
-    // 1. Evitar que se borre el producto mientras el usuario limpia el input
-    if (newQuantity === "") return;
-
-    const qty = parseFloat(newQuantity);
     const template = availableProducts.find((p) => p.id === productId) || {};
 
     setProducts((prev) => {
-      // Filtramos los demás productos para no perderlos
       const otherProducts = prev.filter((p) => p.id !== productId);
 
-      // Si la cantidad es 0 o menor, simplemente lo eliminamos
+      // Si está vacío, permitimos guardar el string vacío "" en el estado temporalmente
+      // para que el usuario pueda borrar todo el número y escribir uno nuevo.
+      if (newQuantity === "") {
+        const emptyInstance = {
+          id: productId,
+          name: template.name || "Producto",
+          price: template.price || 0,
+          observation: "", 
+          additions: [],
+          additionSearchTerm: "",
+          additionSuggestions: [],
+          quantity: "", 
+          isDecimal: true 
+        };
+        return [...otherProducts, emptyInstance];
+      }
+
+      const qty = parseFloat(newQuantity);
+
+      // Si la cantidad es 0 o menor, se elimina el producto de la lista
       if (qty <= 0) return otherProducts;
 
-      // 2. Para Fruver, NO creamos múltiples instancias. 
-      // Creamos UN SOLO objeto que contiene el valor decimal.
       const fruverInstance = {
         id: productId,
         name: template.name || "Producto",
         price: template.price || 0,
-        observation: "", // En Fruver suele ser una sola observación por peso
+        observation: "",
         additions: [],
         additionSearchTerm: "",
         additionSuggestions: [],
-        quantity: qty, // <--- Aquí se guarda el decimal exacto (ej: 1.5)
-        isDecimal: true // Flag útil para cálculos posteriores
+        quantity: qty, 
+        isDecimal: true
       };
 
       return [...otherProducts, fruverInstance];
     });
   };
+
   const incrementProduct = (productId) => {
     const template = availableProducts.find((p) => p.id === productId) || {};
     const instance = {
@@ -271,23 +276,20 @@ export default function ProductList({ products, setProducts, availableAdditions 
 
                           <div className="flex items-center gap-3">
                             {isFruver ? (
-                              /* --- INPUT NUMÉRICO PARA FRUVER --- */
+                              /* --- EXCLUSIVO FRUVER: Input nativo accesible con Tab y borrado libre --- */
                               <div className="flex items-center gap-2">
                                 <label className="text-[10px] uppercase text-gray-500 font-bold">Peso/Cant:</label>
                                 <input
                                   type="number"
                                   min="0"
-                                  step="0.01" // Permite dos decimales (ej: 1.25 kg)
-                                  /* Buscamos la instancia del producto. Como en Fruver solo hay una, 
-                                     accedemos a la propiedad .quantity directamente. 
-                                  */
-                                  value={products.find(p => p.id === product.id)?.quantity || ""}
+                                  step="0.01"
+                                  value={products.find(p => p.id === product.id)?.quantity ?? ""}
                                   onChange={(e) => handleFruverQuantityChange(product.id, e.target.value)}
                                   className="w-24 p-2 bg-gray-900 border border-gray-700 rounded-md text-center text-emerald-400 font-bold focus:ring-1 focus:ring-emerald-500 outline-none"
                                 />
                               </div>
                             ) : (
-                              /* --- SELECTOR +/- PARA RESTAURANTE --- */
+                              /* --- ORIGINAL RESTAURANTE: Tu selector clásico estático con los botones +/- --- */
                               <div className="flex items-center bg-gray-900 rounded-md overflow-hidden border border-gray-800">
                                 <button type="button" onClick={() => decrementProduct(product.id)} className="px-3 py-2 hover:bg-gray-800 text-slate-300" aria-label="disminuir"><FaMinus /></button>
                                 <div className="px-4 py-2 text-sm font-semibold text-slate-200">{instances.length}</div>
