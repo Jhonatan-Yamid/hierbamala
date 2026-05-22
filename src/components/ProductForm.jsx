@@ -226,9 +226,12 @@ function ProductForm({ initialData, onSubmit, isNewProduct }) {
           <option value="">Seleccione una categoría</option>
           <option value="Mercado">Mercado</option>
           <option value="Fruver">Fruver</option>
+          <option value="Fijos">Fijos</option>
           <option value="Otros">Otros</option>
         </select>
       </div>
+
+      
 
       {/* SECCIÓN INGREDIENTES: Se oculta si es fruver */}
       {businessType !== "fruver" && (

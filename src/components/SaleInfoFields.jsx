@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect } from "react";
 import { FaChair, FaTruck, FaGamepad, FaStickyNote } from "react-icons/fa";
+import { MdOutlineAssignmentTurnedIn } from "react-icons/md"; // Icono opcional para el estado de la venta
 
 const SaleInfoFields = ({
   tableNumber,
@@ -13,15 +14,19 @@ const SaleInfoFields = ({
   orderType,
   setOrderType,
   tableInputRef,
-  businessType
+  businessType,
+  saleStatus,  
+  setSaleStatus,  
 }) => {
   const isFruver = businessType === "fruver";
+  
   useEffect(() => {
     if (isFruver && tableNumber !== "Mostrador") {
       setTableNumber("Mostrador");
+      setOrderType("Pagado");
     }
   }, [isFruver, tableNumber, setTableNumber]);
- 
+
   return (
     <div className="w-full bg-[#0b0f12] border border-gray-800 rounded-2xl p-4 md:p-6 space-y-6 shadow-sm">
       <h3 className="text-lg font-semibold text-gray-100">
@@ -63,8 +68,8 @@ const SaleInfoFields = ({
           >
             {isFruver ? (
               <>
-                <option value="En tienda">En tienda</option>
-                <option value="Domicilio">Domicilio</option>
+                <option value="Pagado">Pagado</option>
+                <option value="Pendiente">Pendiente</option>
               </>
             ) : (
               <>
@@ -75,6 +80,26 @@ const SaleInfoFields = ({
             )}
           </select>
         </div>
+
+        {/* 👇 NUEVO: Estado de la Venta - Se renderiza en la segunda columna SOLO si es Fruver */}
+        {isFruver && (
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium flex items-center gap-2 text-gray-300">
+              <MdOutlineAssignmentTurnedIn className="text-gray-400" size={18} />
+              Estado de la Venta
+            </label>
+
+            <select
+              value={saleStatus || "en tienda"}
+              onChange={(e) => setSaleStatus(e.target.value)}
+              className="p-2.5 bg-[#050607] border border-gray-800 rounded-lg w-full 
+              focus:ring-1 focus:ring-emerald-500"
+            >
+              <option value="en tienda">En tienda</option>
+              <option value="domicilio">Domicilio</option>
+            </select>
+          </div>
+        )}
 
         {/* Juegos - Se oculta si es fruver */}
         {!isFruver && (

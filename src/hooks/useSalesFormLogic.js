@@ -7,12 +7,14 @@ import { useEffect, useState, useCallback } from "react";
 const TICKET_CATEGORY_ORDER = [
   "Fruver",
   "Mercado",
+  "Fijos",
   "Otros",
 ];
 
 const CATEGORY_LABEL = {
   "Fruver":                       "FRUVER",
   "Mercado":                      "MERCADO",
+  "Fijos":                        "FIJOS",
   "Otros":                        "OTROS",
 };
 

@@ -266,6 +266,8 @@ const SalesForm = ({ saleId }) => {
             setOrderType={setOrderType}
             tableInputRef={tableInputRef} // 👈 PASAMOS EL REF
             businessType={businessType}
+            saleStatus={saleStatus}     // 👈 Recibimos el estado actual
+            setSaleStatus={setSaleStatus} 
           />
 
           {error && <div className="text-red-400 text-sm rounded-md p-2 bg-red-900/20">{error}</div>}

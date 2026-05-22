@@ -11,6 +11,7 @@ function DailySales() {
     const { printTicket } = useTicketPrinter();
     const { data: session } = useSession();
     const [subTab, setSubTab] = useState("pendientes");
+    const [businessType, setBusinessType] = useState("restaurant");
     const [sales, setSales] = useState([]);
     const [todaySales, setTodaySales] = useState([]);
     const [pastSales, setPastSales] = useState([]);
@@ -25,6 +26,27 @@ function DailySales() {
     const [showTransfers, setShowTransfers] = useState(false);
     const [lastTransfers, setLastTransfers] = useState([]);
     const [loadingTransfers, setLoadingTransfers] = useState(false);
+
+    useEffect(() => {
+        const fetchBusinessConfig = async () => {
+            try {
+                const res = await fetch("/api/business");
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.type) {
+                        const type = data.type.toLowerCase();
+                        setBusinessType(type);
+                        if (type === "fruver") {
+                            setSubTab("domicilios pendientes");
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error("Error cargando configuración de negocio:", err);
+            }
+        };
+        fetchBusinessConfig();
+    }, []);
 
     // Bloquear scroll del fondo al abrir modales
     useEffect(() => {
@@ -131,9 +153,17 @@ function DailySales() {
 
     const handleStatusAdvance = async (sale) => {
         let newStatus = "";
-        if (sale.status === "en proceso") newStatus = "en mesa";
-        else if (sale.status === "en mesa") newStatus = "pagada";
-        else return;
+
+        if (businessType === "fruver") {
+            // 👇 Flujo Fruver: Si es domicilio, pasa a hecho y finaliza el flujo
+            if (sale.status?.toLowerCase() === "domicilio") newStatus = "hecho";
+            else return;
+        } else {
+            // 🔄 Flujo original Restaurant
+            if (sale.status === "en proceso") newStatus = "en mesa";
+            else if (sale.status === "en mesa") newStatus = "pagada";
+            else return;
+        }
 
         try {
             const res = await fetch(`/api/sale/${sale.id}/status`, {
@@ -240,15 +270,28 @@ function DailySales() {
                                     <div className="text-slate-300 text-sm">
                                         Estado: {sale.status}
                                     </div>
-                                    {["en proceso", "en mesa"].includes(sale.status) && (
-                                        <button
-                                            onClick={() => handleStatusAdvance(sale)}
-                                            className="mt-2 bg-emerald-700 hover:bg-emerald-600 text-white text-sm px-3 py-1 rounded"
-                                        >
-                                            {sale.status === "en proceso"
-                                                ? "Orden lista"
-                                                : "Marcar como pagada"}
-                                        </button>
+                                    {businessType === "fruver" ? (
+                                        // Botón para Fruver: Solo aparece si el estado actual es "domicilio"
+                                        sale.status?.toLowerCase() === "domicilio" && (
+                                            <button
+                                                onClick={() => handleStatusAdvance(sale)}
+                                                className="mt-2 bg-emerald-700 hover:bg-emerald-600 text-white text-sm px-3 py-1 rounded"
+                                            >
+                                                Marcar como Hecho
+                                            </button>
+                                        )
+                                    ) : (
+                                        // 🔄 Botón original para Restaurant
+                                        ["en proceso", "en mesa"].includes(sale.status) && (
+                                            <button
+                                                onClick={() => handleStatusAdvance(sale)}
+                                                className="mt-2 bg-emerald-700 hover:bg-emerald-600 text-white text-sm px-3 py-1 rounded"
+                                            >
+                                                {sale.status === "en proceso"
+                                                    ? "Orden lista"
+                                                    : "Marcar como pagada"}
+                                            </button>
+                                        )
                                     )}
                                 </div>
 
@@ -350,32 +393,69 @@ function DailySales() {
                         >
                             Todas
                         </button>
-                        <button
-                            onClick={() => setSubTab("pendientes")}
-                            className={`px-3 py-1 rounded-full text-sm ${subTab === "pendientes"
-                                ? "bg-yellow-700 text-white"
-                                : "bg-gray-600 text-gray-200"
-                                }`}
-                        >
-                            En proceso / En mesa
-                        </button>
-                        <button
-                            onClick={() => setSubTab("pagadas")}
-                            className={`px-3 py-1 rounded-full text-sm ${subTab === "pagadas"
-                                ? "bg-blue-700 text-white"
-                                : "bg-gray-600 text-gray-200"
-                                }`}
-                        >
-                            Pagadas
-                        </button>
+
+                        {businessType === "fruver" ? (
+                            <>
+                                {/* 👇 Filtros optimizados exclusivamente para Domicilios en Fruver */}
+                                <button
+                                    onClick={() => setSubTab("domicilios pendientes")}
+                                    className={`px-3 py-1 rounded-full text-sm ${subTab === "domilios pendientes" || subTab === "domicilios pendientes"
+                                        ? "bg-yellow-700 text-white"
+                                        : "bg-gray-600 text-gray-200"
+                                        }`}
+                                >
+                                    Domicilios Pendientes
+                                </button>
+                                <button
+                                    onClick={() => setSubTab("domicilios hechos")}
+                                    className={`px-3 py-1 rounded-full text-sm ${subTab === "domicilios hechos"
+                                        ? "bg-blue-700 text-white"
+                                        : "bg-gray-600 text-gray-200"
+                                        }`}
+                                >
+                                    Domicilios Hechos
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                {/* 🔄 Filtros originales de Restaurant */}
+                                <button
+                                    onClick={() => setSubTab("pendientes")}
+                                    className={`px-3 py-1 rounded-full text-sm ${subTab === "pendientes"
+                                        ? "bg-yellow-700 text-white"
+                                        : "bg-gray-600 text-gray-200"
+                                        }`}
+                                >
+                                    En proceso / En mesa
+                                </button>
+                                <button
+                                    onClick={() => setSubTab("pagadas")}
+                                    className={`px-3 py-1 rounded-full text-sm ${subTab === "pagadas"
+                                        ? "bg-blue-700 text-white"
+                                        : "bg-gray-600 text-gray-200"
+                                        }`}
+                                >
+                                    Pagadas
+                                </button>
+                            </>
+                        )}
                     </div>
 
+                    {/* Filtrado de la lista de ventas según la pestaña activa */}
                     {renderSaleList(
                         todaySales.filter((sale) => {
                             if (subTab === "todas") return true;
-                            if (subTab === "pendientes")
-                                return sale.status === "en proceso" || sale.status === "en mesa";
-                            if (subTab === "pagadas") return sale.status === "pagada";
+
+                            if (businessType === "fruver") {
+                                // 👇 Evaluación de filtros para Fruver
+                                if (subTab === "domicilios pendientes") return sale.status?.toLowerCase() === "domicilio";
+                                if (subTab === "domicilios hechos") return sale.status?.toLowerCase() === "hecho";
+                            } else {
+                                // 🔄 Evaluación original para Restaurant
+                                if (subTab === "pendientes")
+                                    return sale.status === "en proceso" || sale.status === "en mesa";
+                                if (subTab === "pagadas") return sale.status === "pagada";
+                            }
                             return true;
                         })
                     )}

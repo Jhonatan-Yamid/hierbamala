@@ -26,12 +26,14 @@ import {
 const CATEGORY_ORDER = [
   "Fruver",
   "Mercado",
+  "Fijos",
   "Otros",
 ];
 
 const CATEGORY_META = {
   "Mercado": { icon: FaUtensils, color: "from-red-800 to-yellow-600" },
   "Fruver": { icon: FaBoxes, color: "from-emerald-700 to-emerald-400" },
+  "Fijos": { icon: FaBoxes, color: "from-emerald-700 to-emerald-400" },
   "Otros": { icon: FaStickyNote, color: "from-gray-600 to-gray-400" },
 };
 

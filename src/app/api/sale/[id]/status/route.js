@@ -19,7 +19,7 @@ export async function PUT(request, { params }) {
     }
 
     // Opcional: Validar que el estado sea uno de los valores permitidos
-    const allowedStatuses = ["en proceso", "en mesa", "pagada"];
+    const allowedStatuses = ["en proceso", "en mesa", "pagada", "domicilio", "hecho", "en tienda"];
     if (!allowedStatuses.includes(status)) {
       return NextResponse.json({ message: 'Estado proporcionado no válido.' }, { status: 400 });
     }
