@@ -24,8 +24,9 @@ const SaleInfoFields = ({
     if (isFruver && tableNumber !== "Mostrador") {
       setTableNumber("Mostrador");
       setOrderType("Pagado");
+      setSaleStatus("en tienda")
     }
-  }, [isFruver, tableNumber, setTableNumber]);
+  }, [isFruver, tableNumber, setTableNumber, saleStatus, orderType]);
 
   return (
     <div className="w-full bg-[#0b0f12] border border-gray-800 rounded-2xl p-4 md:p-6 space-y-6 shadow-sm">
