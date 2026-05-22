@@ -52,7 +52,7 @@ const SalesForm = ({ saleId }) => {
   useEffect(() => {
     const fetchBusinessConfig = async () => {
       try {
-        const res = await fetch("/api/business"); 
+        const res = await fetch("/api/business");
         if (res.ok) {
           const data = await res.json();
           if (data && data.type) {
@@ -66,6 +66,48 @@ const SalesForm = ({ saleId }) => {
     fetchBusinessConfig();
   }, []);
 
+  // ⌨️ Escuchar la combinación Shift + Tab para guardar la venta
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      // Verifica que presione TAB y que al mismo tiempo tenga SHIFT presionado
+      if (event.key === "Tab" && event.shiftKey) {
+        event.preventDefault(); // Evita el comportamiento por defecto
+        handlePay();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [products, tableNumber, generalObservation, businessType, isSubmitting]);
+
+
+  useEffect(() => {
+    if (businessType === "fruver" && !isEditing && availableProducts && availableProducts.length > 0) {
+
+      // 2. Solo agregarlos si la lista de productos actual está vacía (para evitar bucles o sobreescribir)
+      if (products.length === 0) {
+
+        // 3. Filtrar los productos que pertenezcan a la categoría "fijos"
+        // 💡 NOTA: Asegúrate de si tu API devuelve "fijos", "Fijos" o "FIJOS" y usa .toLowerCase() para asegurar.
+        const productosFijos = availableProducts
+          .filter(p => p.category?.toLowerCase() === "fijos" || p.categoria?.toLowerCase() === "fijos")
+          .map(p => ({
+            ...p,
+            quantity: 1, // 👈 Forzar cantidad en 1
+            observation: null,
+            additions: []
+          }));
+
+        // 4. Cargarlos al estado del formulario
+        if (productosFijos.length > 0) {
+          setProducts(productosFijos);
+        }
+      }
+    }
+  }, [businessType, isEditing, availableProducts, products.length, setProducts]);
+
   if (isLoading) {
     return (
       <div className="w-full flex flex-col items-center justify-center p-6">
@@ -77,7 +119,7 @@ const SalesForm = ({ saleId }) => {
 
   const handlePay = async () => {
     if (isSubmitting) return; // 🔒 Bloquea doble click
-// 💡 Validación dinámica: Solo exigir mesa si NO es fruver
+    // 💡 Validación dinámica: Solo exigir mesa si NO es fruver
     if (businessType !== "fruver" && (!tableNumber || tableNumber.trim() === "")) {
       alert("Debes ingresar el número de mesa");
       tableInputRef.current?.focus();
@@ -141,9 +183,21 @@ const SalesForm = ({ saleId }) => {
       // 🔥 COMPORTAMIENTO DIFERENTE SEGÚN ESCENARIO
 
       if (!isEditing) {
+        if (businessType !== "fruver") {
+          router.push("/dashboard/saleTable");
+          return;
+        } else {
+          alert("Venta guardada con éxito");
+          router.refresh();
+          // O de forma alternativa si quieres limpiar los estados manuales que no dependan del hook:
+          setProducts([]);
+          setTableNumber("");
+          setGeneralObservation("");
+          // Si tu hook useSalesFormLogic expone una función para resetear el formulario, la ideal sería llamarla aquí.
+          return;
+        }
         // 🚀 NUEVA VENTA → redirigir directamente
-        router.push("/dashboard/saleTable");
-        return;
+
       }
 
       // ✏️ EDICIÓN → mostrar preview
@@ -189,6 +243,7 @@ const SalesForm = ({ saleId }) => {
             setSuggestions={setSuggestions}
             availableProducts={availableProducts}
             setProducts={setProducts}
+            businessType={businessType}
           />
 
           <ProductList

@@ -200,89 +200,102 @@ function DailySales() {
             {salesList.length === 0 ? (
                 <p className="text-slate-200">No hay ventas registradas</p>
             ) : (
-                salesList.map((sale) => (
-                    <div
-                        key={sale.id}
-                        className="flex items-start mb-4 cursor-pointer p-4 bg-gray-800 rounded-lg shadow-md"
-                    >
-                        <div className="flex items-center justify-center w-14 h-14 bg-gray-700 rounded-md mr-4 flex-shrink-0 mt-1">
-                            <FaCashRegister className="text-white" size={20} />
-                        </div>
+                salesList.map((sale) => {
+                    // Verificamos si las fechas son diferentes (con una tolerancia de 1 segundo para evitar falsos positivos por milisegundos de guardado en base de datos)
+                    const isEdited = Math.abs(new Date(sale.updatedAt) - new Date(sale.createdAt)) > 1000;
 
-                        <div className="flex flex-col sm:flex-row justify-between w-full">
-                            <div className="flex flex-col items-start flex-grow">
-                                <h3 className="text-green-400 text-4xl font-extrabold leading-none mb-2">
-                                    Mesa: {sale.table}
-                                </h3>
-                                <h2 className="text-slate-200 text-xl font-semibold">
-                                    Venta -{" "}
-                                    {new Date(sale.updatedAt).toLocaleDateString("es-CL")} /{" "}
-                                    {new Date(sale.updatedAt).toLocaleTimeString("es-CL", {
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                    })}
-                                </h2>
-                                <span className="text-slate-300 text-sm">
-                                    Productos: {sale.products?.length || 0}
-                                </span>
-                                <div className="text-slate-300 text-sm">
-                                    Estado: {sale.status}
-                                </div>
-                                {["en proceso", "en mesa"].includes(sale.status) && (
-                                    <button
-                                        onClick={() => handleStatusAdvance(sale)}
-                                        className="mt-2 bg-emerald-700 hover:bg-emerald-600 text-white text-sm px-3 py-1 rounded"
-                                    >
-                                        {sale.status === "en proceso"
-                                            ? "Orden lista"
-                                            : "Marcar como pagada"}
-                                    </button>
-                                )}
+                    return (
+                        <div
+                            key={sale.id}
+                            className="flex items-start mb-4 cursor-pointer p-4 bg-gray-800 rounded-lg shadow-md"
+                        >
+                            <div className="flex items-center justify-center w-14 h-14 bg-gray-700 rounded-md mr-4 flex-shrink-0 mt-1">
+                                <FaCashRegister className="text-white" size={20} />
                             </div>
 
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center mt-4 sm:mt-0 sm:ml-4 flex-shrink-0">
-                                <div className="flex items-center mb-4 sm:mb-0 mr-4">
-                                    <span className="text-slate-200 text-lg font-semibold mr-2">
-                                        Total:
+                            <div className="flex flex-col sm:flex-row justify-between w-full">
+                                <div className="flex flex-col items-start flex-grow">
+                                    <h3 className="text-green-400 text-4xl font-extrabold leading-none mb-2">
+                                        Mesa: {sale.table}
+                                    </h3>
+                                    <h2 className="text-slate-200 text-xl font-semibold flex flex-wrap items-center gap-2">
+                                        <span>
+                                            Venta -{" "}
+                                            {new Date(sale.createdAt).toLocaleDateString("es-CL")} /{" "}
+                                            {new Date(sale.createdAt).toLocaleTimeString("es-CL", {
+                                                hour: "2-digit",
+                                                minute: "2-digit",
+                                            })}
+                                        </span>
+                                        {/* Añadimos el distintivo de Editado aquí */}
+                                        {isEdited && (
+                                            <span className="bg-yellow-700 text-white text-xs font-bold px-2 py-0.5 rounded shadow-sm">
+                                                Editada
+                                            </span>
+                                        )}
+                                    </h2>
+                                    <span className="text-slate-300 text-sm">
+                                        Productos: {sale.products?.length || 0}
                                     </span>
-                                    <span className="text-slate-300 text-lg font-semibold">
-                                        {new Intl.NumberFormat("es-CL", {
-                                            style: "currency",
-                                            currency: "CLP",
-                                        }).format(sale.totalAmount)}
-                                    </span>
-                                </div>
-                                <div className="flex justify-start sm:justify-end w-full sm:w-auto">
-                                    <Link href={`/dashboard/sales/${sale.id}`}>
-                                        <button className="ml-4 text-gray-600 hover:text-gray-200 text-3xl">
-                                            <FaEdit />
-                                        </button>
-                                    </Link>
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handlePreview(sale);
-                                        }}
-                                        className="ml-4 text-gray-600 hover:text-gray-200 text-3xl"
-                                    >
-                                        <FaEye />
-                                    </button>
-                                    {session?.user?.image === 1 && (
+                                    <div className="text-slate-300 text-sm">
+                                        Estado: {sale.status}
+                                    </div>
+                                    {["en proceso", "en mesa"].includes(sale.status) && (
                                         <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleDeleteSale(sale.id);
-                                            }}
-                                            className="ml-4 text-red-500 hover:text-red-300 text-3xl"
+                                            onClick={() => handleStatusAdvance(sale)}
+                                            className="mt-2 bg-emerald-700 hover:bg-emerald-600 text-white text-sm px-3 py-1 rounded"
                                         >
-                                            <FaTrashAlt />
+                                            {sale.status === "en proceso"
+                                                ? "Orden lista"
+                                                : "Marcar como pagada"}
                                         </button>
                                     )}
                                 </div>
+
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center mt-4 sm:mt-0 sm:ml-4 flex-shrink-0">
+                                    <div className="flex items-center mb-4 sm:mb-0 mr-4">
+                                        <span className="text-slate-200 text-lg font-semibold mr-2">
+                                            Total:
+                                        </span>
+                                        <span className="text-slate-300 text-lg font-semibold">
+                                            {new Intl.NumberFormat("es-CL", {
+                                                style: "currency",
+                                                currency: "CLP",
+                                            }).format(sale.totalAmount)}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-start sm:justify-end w-full sm:w-auto">
+                                        <Link href={`/dashboard/sales/${sale.id}`}>
+                                            <button className="ml-4 text-gray-600 hover:text-gray-200 text-3xl">
+                                                <FaEdit />
+                                            </button>
+                                        </Link>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handlePreview(sale);
+                                            }}
+                                            className="ml-4 text-gray-600 hover:text-gray-200 text-3xl"
+                                        >
+                                            <FaEye />
+                                        </button>
+                                        {session?.user?.image === 1 && (
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDeleteSale(sale.id);
+                                                }}
+                                                className="ml-4 text-red-500 hover:text-red-300 text-3xl"
+                                            >
+                                                <FaTrashAlt />
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                ))
+                    );
+                })
             )}
         </div>
     );
@@ -406,7 +419,7 @@ function DailySales() {
                 </div>
             )}
 
-            {/* Modal de vista previa (se mantiene igual) */}
+            {/* Modal de vista previa */}
             {showPreview && (
                 <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
                     <div className="bg-gray-900 w-full h-full max-h-screen overflow-hidden flex flex-col relative rounded-none">

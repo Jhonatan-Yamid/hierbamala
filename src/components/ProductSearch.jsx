@@ -1,9 +1,15 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 
-const ProductSearch = ({ searchTerm, setSearchTerm, suggestions, setSuggestions, availableProducts, setProducts }) => {
-
+const ProductSearch = ({ searchTerm, setSearchTerm, suggestions, setSuggestions, availableProducts, setProducts, businessType }) => {
   const [beerStock, setBeerStock] = useState({});
+  // 1. Estado para controlar el índice seleccionado con las flechas
+  const [activeIndex, setActiveIndex] = useState(-1);
+  
+  // 2. Referencia para el input de búsqueda
+  const inputRef = useRef(null);
+
+  const isFruver = businessType === "fruver";
 
   useEffect(() => {
     fetch("/api/products/search")
@@ -18,9 +24,12 @@ const ProductSearch = ({ searchTerm, setSearchTerm, suggestions, setSuggestions,
       .catch(() => { });
   }, []);
 
+  // Reiniciar el índice seleccionado cada vez que cambien las sugerencias
+  useEffect(() => {
+    setActiveIndex(-1);
+  }, [suggestions]);
+
   const addProduct = (product) => {
-    // IMPORTANTE: Usamos una función de actualización para asegurar que siempre 
-    // tenemos el estado más reciente de la lista de productos (vital para scanners rápidos)
     setProducts((prev) => {
       const existingIndex = prev.findIndex((p) => p.id === product.id);
 
@@ -49,28 +58,29 @@ const ProductSearch = ({ searchTerm, setSearchTerm, suggestions, setSuggestions,
 
     setSearchTerm("");
     setSuggestions([]);
+
+    // 3. ENFOQUE AUTOMÁTICO: Solo si se cumple tu condición de negocio
+    if (isFruver && inputRef.current) {
+      inputRef.current.focus();
+    }
   };
 
   const handleSearchChange = (e) => {
     const term = e.target.value;
     setSearchTerm(term);
-    
 
     if (term.length > 0) {
       const cleanTerm = term.trim();
 
-      // 1. PRIORIDAD SCANNER: 
-      // Agregamos .toLowerCase() y comprobamos que barcode exista
       const exactMatch = availableProducts.find(
         (p) => p.barcode && p.barcode.toString().trim().toLowerCase() === cleanTerm.toLowerCase()
       );
 
       if (exactMatch) {
         addProduct(exactMatch);
-        return; 
+        return;
       }
 
-      // 2. BÚSQUEDA MANUAL
       const filtered = availableProducts.filter((p) =>
         p.name.toLowerCase().includes(cleanTerm.toLowerCase()) ||
         (p.barcode && p.barcode.toString().includes(cleanTerm))
@@ -82,22 +92,60 @@ const ProductSearch = ({ searchTerm, setSearchTerm, suggestions, setSuggestions,
     }
   };
 
-  // Función manejadora para presionar Enter
+  // 4. MANEJO DE TECLADO MEJORADO (Flechas y Enter)
   const handleKeyDown = (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault(); // Evita que se envíe un formulario padre
-      
+    // Si la condición de isFruver no se cumple, mantenemos el comportamiento básico que ya tenías
+    if (!isFruver) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        const cleanTerm = searchTerm.trim().toLowerCase();
+        if (cleanTerm.length > 0) {
+          const exactMatch = availableProducts.find(
+            (p) => p.barcode && p.barcode.toString().trim().toLowerCase() === cleanTerm
+          );
+          if (exactMatch) addProduct(exactMatch);
+        }
+      }
+      return;
+    }
+
+    // Comportamiento inteligente con Flechas y Enter (Solo para isFruver)
+    if (suggestions.length > 0) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setActiveIndex((prevIndex) => 
+          prevIndex < suggestions.length - 1 ? prevIndex + 1 : 0
+        );
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setActiveIndex((prevIndex) => 
+          prevIndex > 0 ? prevIndex - 1 : suggestions.length - 1
+        );
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        // Si hay un elemento seleccionado en la lista con las flechas, lo agrega
+        if (activeIndex >= 0 && activeIndex < suggestions.length) {
+          addProduct(suggestions[activeIndex]);
+        } else {
+          // Si no hay ninguno seleccionado con flechas, busca por código de barras exacto como antes
+          const cleanTerm = searchTerm.trim().toLowerCase();
+          if (cleanTerm.length > 0) {
+            const exactMatch = availableProducts.find(
+              (p) => p.barcode && p.barcode.toString().trim().toLowerCase() === cleanTerm
+            );
+            if (exactMatch) addProduct(exactMatch);
+          }
+        }
+      }
+    } else if (e.key === "Enter") {
+      // Si no hay sugerencias, comportamiento por defecto de Enter
+      e.preventDefault();
       const cleanTerm = searchTerm.trim().toLowerCase();
-      console.log(availableProducts)
       if (cleanTerm.length > 0) {
-        // Busca una coincidencia exacta por código de barras
         const exactMatch = availableProducts.find(
           (p) => p.barcode && p.barcode.toString().trim().toLowerCase() === cleanTerm
         );
-
-        if (exactMatch) {
-          addProduct(exactMatch);
-        }
+        if (exactMatch) addProduct(exactMatch);
       }
     }
   };
@@ -107,23 +155,27 @@ const ProductSearch = ({ searchTerm, setSearchTerm, suggestions, setSuggestions,
       <label htmlFor="productSearch" className="block text-sm font-medium text-gray-300">Buscar Producto</label>
       <div className="relative mt-2">
         <input
+          ref={inputRef} // 5. Asignamos la referencia al input
           type="text"
           id="productSearch"
           value={searchTerm}
-          autoComplete="off" // Evita sugerencias del navegador
+          autoComplete="off"
           onChange={handleSearchChange}
-          onKeyDown={handleKeyDown} // Asignamos la nueva función aquí
+          onKeyDown={handleKeyDown}
           className="w-full p-3 bg-[#050607] border border-gray-800 rounded-xl placeholder:text-gray-500 focus:ring-1 focus:ring-emerald-500 text-white"
           placeholder="Escribe o escanea un producto..."
-          autoFocus // Útil para que el scanner funcione de inmediato
+          autoFocus
         />
         {suggestions.length > 0 && (
           <ul className="absolute z-30 left-0 right-0 mt-2 bg-[#040506] border border-gray-800 rounded-xl shadow-xl max-h-56 overflow-y-auto border-emerald-500/20">
-            {suggestions.map(product => (
+            {suggestions.map((product, index) => (
               <li
                 key={product.id}
                 onClick={() => addProduct(product)}
-                className="p-3 hover:bg-gray-900 cursor-pointer flex justify-between items-center border-b border-gray-800/50 last:border-0"
+                // 6. Cambiamos el fondo dinámicamente si el elemento está seleccionado con las flechas
+                className={`p-3 cursor-pointer flex justify-between items-center border-b border-gray-800/50 last:border-0 ${
+                  index === activeIndex ? "bg-gray-800 text-white" : "hover:bg-gray-900"
+                }`}
               >
                 <div>
                   <div className="font-medium text-slate-200">{product.name}</div>
