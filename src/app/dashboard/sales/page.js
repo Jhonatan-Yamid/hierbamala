@@ -66,6 +66,14 @@ const SalesForm = ({ saleId }) => {
     fetchBusinessConfig();
   }, []);
 
+  useEffect(() => {
+    if (businessType === "fruver") {
+      setShouldPrint(true);
+    } else {
+      setShouldPrint(false);
+    }
+  }, [businessType]);
+
   // ⌨️ Escuchar la combinación Shift + Tab para guardar la venta
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -267,7 +275,7 @@ const SalesForm = ({ saleId }) => {
             tableInputRef={tableInputRef} // 👈 PASAMOS EL REF
             businessType={businessType}
             saleStatus={saleStatus}     // 👈 Recibimos el estado actual
-            setSaleStatus={setSaleStatus} 
+            setSaleStatus={setSaleStatus}
           />
 
           {error && <div className="text-red-400 text-sm rounded-md p-2 bg-red-900/20">{error}</div>}
@@ -317,6 +325,7 @@ const SalesForm = ({ saleId }) => {
 
         {showPreview && (
           <TicketPreviewModal
+            businessType={businessType} 
             products={products}
             total={calculateTotal()}
             tableNumber={tableNumber}

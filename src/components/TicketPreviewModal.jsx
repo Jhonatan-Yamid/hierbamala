@@ -4,6 +4,7 @@ import { FaPrint, FaShareAlt } from "react-icons/fa";
 import { IoClose } from "react-icons/io5";
 
 const TicketPreviewModal = ({
+  businessType,
   products = [],
   total = 0,
   tableNumber,
@@ -43,12 +44,14 @@ const TicketPreviewModal = ({
           </div>
 
           <div className="flex items-center gap-3">
-            <button
-              onClick={onPrint}
-              className="bg-emerald-600 hover:bg-emerald-700 text-black font-semibold px-4 py-2 rounded-lg flex items-center gap-2"
-            >
-              <FaPrint /> Imprimir
-            </button>
+            {businessType !== "fruver" && (
+              <button
+                onClick={onPrint}
+                className="bg-emerald-600 hover:bg-emerald-700 text-black font-semibold px-4 py-2 rounded-lg flex items-center gap-2"
+              >
+                <FaPrint /> Imprimir
+              </button>
+            )}
 
             <button
               onClick={onShare}
