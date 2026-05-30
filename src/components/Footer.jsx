@@ -22,7 +22,7 @@ export default function Footer() {
       <div>
         <ul>
           <li className="font-bold">Contactanos</li>
-          <li>raicescampesinasfruver@gmail.com</li>
+          <li>{process.env.NEXT_PUBLIC_EMAIL}</li>
           <li>+57 (321) 828-0162</li>
         </ul>
       </div>

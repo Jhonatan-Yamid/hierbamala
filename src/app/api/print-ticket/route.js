@@ -24,7 +24,7 @@ export async function POST(request) {
       .align('CT')
       .style('B')
       .size(1, 1)
-      .text('Raices Campesinas')
+      .text( process.env.NEXT_PUBLIC_APP_NAME)
       .text('--------------------------')
       .align('LT');
 

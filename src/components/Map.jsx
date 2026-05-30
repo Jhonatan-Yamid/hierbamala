@@ -11,7 +11,7 @@ function Map() {
         allowFullScreen="" 
         loading="lazy" 
         referrerPolicy="no-referrer-when-downgrade"
-        title="Mapa de Raices Campesinas Gastrobar"
+        title="Mapa como llegar"
       ></iframe>
     </div>
   );

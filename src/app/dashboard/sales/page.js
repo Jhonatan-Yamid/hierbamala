@@ -232,7 +232,7 @@ const SalesForm = ({ saleId }) => {
         <header className="flex items-center justify-between gap-4">
           <div>
             <h2 className="text-2xl font-extrabold"> {isEditing ? "Editar Venta" : "Nueva Venta"}</h2>
-            <p className="text-sm text-gray-400">{new Date().toLocaleTimeString()} • Raices Campesinas</p>
+            <p className="text-sm text-gray-400">{new Date().toLocaleTimeString()} •  {process.env.NEXT_PUBLIC_APP_NAME}</p>
           </div>
 
           <div className="flex items-center gap-3">

@@ -6,7 +6,7 @@ import Providers from "./Providers";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "Raices Campesinas",
+  title: process.env.NEXT_PUBLIC_APP_NAME,
   description: "Para compartir y disfrutar - familia y amigos. Ofrecemos Entradas , Asados , comida mexicana, Antojos dulces, Cócteles de autor, Shots",
   manifest:"/manifest.json",
   icons: {

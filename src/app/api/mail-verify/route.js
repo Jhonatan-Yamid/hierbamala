@@ -9,8 +9,8 @@ export async function GET() {
         port: 993,
         secure: true,
         auth: {
-            user: 'raicescampesinas11@gmail.com',
-            pass: 'qwysbbmjujcaiupb'
+            user: process.env.NEXT_PUBLIC_USER_EMAIL,
+            pass: process.env.NEXT_PUBLIC_PASSWORD_EMAIL
         },
         logger: false
     });

@@ -162,7 +162,7 @@ const useSalesFormLogic = (saleId) => {
     const date = new Date();
     const sep = "─────────────────────────────────";
 
-    let ticket = `    Raices Campesinas\n`;
+    let ticket = `    ${process.env.NEXT_PUBLIC_APP_NAME}\n`;
     ticket += `${sep}\n`;
     ticket += `Fecha: ${date.toLocaleDateString("es-CO")}  ${date.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}\n`;
     ticket += `Mesa: ${tableNumber || "-"}\n`;
