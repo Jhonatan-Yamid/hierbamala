@@ -6,8 +6,6 @@ import {
   FaStickyNote,
   FaChevronDown,
   FaChevronUp,
-  FaPlus,
-  FaMinus,
   FaTimes,
   FaUtensils,
 } from "react-icons/fa";
@@ -40,7 +38,7 @@ export default function ProductList({ products, setProducts, availableAdditions 
   const additionInputRefs = useRef({});
   const isFruver = businessType === "fruver";
 
-  // agrupar availableProducts por categoría
+  // Agrupar availableProducts por categoría
   const groupedProducts = useMemo(() => {
     const map = {};
     for (const prod of availableProducts) {
@@ -70,33 +68,29 @@ export default function ProductList({ products, setProducts, availableAdditions 
     return [...CATEGORY_ORDER.filter(c => groupedProducts[c] !== undefined), ...extra];
   }, [groupedProducts]);
 
-  // --- Lógica de Cantidad para Fruver (Corregida para permitir borrado) ---
+  // --- Lógica de Cantidad para Fruver ---
   const handleFruverQuantityChange = (productId, newQuantity) => {
     const template = availableProducts.find((p) => p.id === productId) || {};
 
     setProducts((prev) => {
       const otherProducts = prev.filter((p) => p.id !== productId);
 
-      // Si está vacío, permitimos guardar el string vacío "" en el estado temporalmente
-      // para que el usuario pueda borrar todo el número y escribir uno nuevo.
       if (newQuantity === "") {
         const emptyInstance = {
           id: productId,
           name: template.name || "Producto",
           price: template.price || 0,
-          observation: "", 
+          observation: "",
           additions: [],
           additionSearchTerm: "",
           additionSuggestions: [],
-          quantity: "", 
-          isDecimal: true 
+          quantity: "",
+          isDecimal: true
         };
         return [...otherProducts, emptyInstance];
       }
 
       const qty = parseFloat(newQuantity);
-
-      // Si la cantidad es 0 o menor, se elimina el producto de la lista
       if (qty <= 0) return otherProducts;
 
       const fruverInstance = {
@@ -107,7 +101,7 @@ export default function ProductList({ products, setProducts, availableAdditions 
         additions: [],
         additionSearchTerm: "",
         additionSuggestions: [],
-        quantity: qty, 
+        quantity: qty,
         isDecimal: true
       };
 
@@ -115,31 +109,47 @@ export default function ProductList({ products, setProducts, availableAdditions 
     });
   };
 
-  const incrementProduct = (productId) => {
-    const template = availableProducts.find((p) => p.id === productId) || {};
-    const instance = {
-      id: productId,
-      name: template.name || "Producto",
-      price: template.price || 0,
-      observation: "",
-      additions: [],
-      additionSearchTerm: "",
-      additionSuggestions: [],
-    };
-    setProducts((prev) => [...prev, instance]);
-  };
+  // --- Lógica de Cantidad para Restaurante (Crea/Remueve N instancias) ---
+const handleRestaurantQuantityChange = (productId, newQuantityStr) => {
+  const template = availableProducts.find((p) => p.id === productId) || {};
 
-  const decrementProduct = (productId) => {
-    setProducts((prev) => {
-      const i = [...prev].reverse().findIndex((p) => p.id === productId);
-      if (i === -1) return prev;
-      const idxFromStart = prev.length - 1 - i;
-      const copy = [...prev];
-      copy.splice(idxFromStart, 1);
-      setOpenInstanceIndex((openIdx) => (openIdx === null ? null : openIdx > idxFromStart ? openIdx - 1 : openIdx === idxFromStart ? null : openIdx));
-      return copy;
-    });
-  };
+  setProducts((prev) => {
+    // Si el usuario borra todo, no hacemos nada a la lista de productos (así no se borra la orden)
+    // PERO permitimos que la función termine aquí para que el Input se vea vacío.
+    if (newQuantityStr === "") {
+      return prev; 
+    }
+
+    const targetQty = parseInt(newQuantityStr, 10);
+    
+    // Si el usuario escribe un número inválido, no hacemos nada
+    if (isNaN(targetQty) || targetQty <= 0) {
+      return prev; 
+    }
+
+    // ... aquí sigue tu lógica original de filtrar instancias ...
+    const currentInstances = prev.filter((p) => p.id === productId);
+    const otherProducts = prev.filter((p) => p.id !== productId);
+    const currentQty = currentInstances.length;
+
+    if (targetQty > currentQty) {
+      const needed = targetQty - currentQty;
+      const newInstances = Array.from({ length: needed }, () => ({
+        id: productId,
+        name: template.name || "Producto",
+        price: template.price || 0,
+        observation: "",
+        additions: [],
+      }));
+      return [...otherProducts, ...currentInstances, ...newInstances];
+    } else if (targetQty < currentQty) {
+      const keptInstances = currentInstances.slice(0, targetQty);
+      return [...otherProducts, ...keptInstances];
+    }
+
+    return prev;
+  });
+};
 
   const getInstanceGlobalIndices = (productId) =>
     products.map((p, idx) => ({ p, idx })).filter(x => x.p.id === productId).map(x => x.idx);
@@ -276,7 +286,7 @@ export default function ProductList({ products, setProducts, availableAdditions 
 
                           <div className="flex items-center gap-3">
                             {isFruver ? (
-                              /* --- EXCLUSIVO FRUVER: Input nativo accesible con Tab y borrado libre --- */
+                              /* --- EXCLUSIVO FRUVER: Input nativo accesible decimal --- */
                               <div className="flex items-center gap-2">
                                 <label className="text-[10px] uppercase text-gray-500 font-bold">Peso/Cant:</label>
                                 <input
@@ -289,11 +299,42 @@ export default function ProductList({ products, setProducts, availableAdditions 
                                 />
                               </div>
                             ) : (
-                              /* --- ORIGINAL RESTAURANTE: Tu selector clásico estático con los botones +/- --- */
-                              <div className="flex items-center bg-gray-900 rounded-md overflow-hidden border border-gray-800">
-                                <button type="button" onClick={() => decrementProduct(product.id)} className="px-3 py-2 hover:bg-gray-800 text-slate-300" aria-label="disminuir"><FaMinus /></button>
-                                <div className="px-4 py-2 text-sm font-semibold text-slate-200">{instances.length}</div>
-                                <button type="button" onClick={() => incrementProduct(product.id)} className="px-3 py-2 hover:bg-gray-800 text-slate-300" aria-label="aumentar"><FaPlus /></button>
+                              /* --- RESTAURANTE: Input numérico directo que actualiza la cantidad de instancias --- */
+
+                              <div className="flex items-center gap-1">
+                                {/* Botón Decrementar */}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const currentQty = instances.length;
+                                    if (currentQty > 1) {
+                                      handleRestaurantQuantityChange(product.id, (currentQty - 1).toString());
+                                    }
+                                  }}
+                                  className="w-8 h-8 flex items-center justify-center bg-gray-800 hover:bg-gray-700 rounded-md text-slate-300"
+                                >
+                                  -
+                                </button>
+
+                                <input
+                                  type="number"
+                                  min="1"
+                                  step="1"
+                                  value={instances.length}
+                                  onChange={(e) => handleRestaurantQuantityChange(product.id, e.target.value)}
+                                  className="w-16 p-2 bg-gray-900 border border-gray-700 rounded-md text-center text-slate-200 font-bold focus:ring-1 focus:ring-slate-500 outline-none"
+                                />
+
+                                {/* Botón Incrementar */}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    handleRestaurantQuantityChange(product.id, (instances.length + 1).toString());
+                                  }}
+                                  className="w-8 h-8 flex items-center justify-center bg-gray-800 hover:bg-gray-700 rounded-md text-slate-300"
+                                >
+                                  +
+                                </button>
                               </div>
                             )}
                           </div>

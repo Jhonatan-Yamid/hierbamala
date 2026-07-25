@@ -5,7 +5,7 @@ const ProductSearch = ({ searchTerm, setSearchTerm, suggestions, setSuggestions,
   const [beerStock, setBeerStock] = useState({});
   // 1. Estado para controlar el índice seleccionado con las flechas
   const [activeIndex, setActiveIndex] = useState(-1);
-  
+
   // 2. Referencia para el input de búsqueda
   const inputRef = useRef(null);
 
@@ -30,36 +30,21 @@ const ProductSearch = ({ searchTerm, setSearchTerm, suggestions, setSuggestions,
   }, [suggestions]);
 
   const addProduct = (product) => {
-    setProducts((prev) => {
-      const existingIndex = prev.findIndex((p) => p.id === product.id);
-
-      if (existingIndex !== -1) {
-        const updatedProducts = [...prev];
-        const currentQty = Number(updatedProducts[existingIndex].quantity || 1);
-        updatedProducts[existingIndex] = {
-          ...updatedProducts[existingIndex],
-          quantity: currentQty + 1,
-        };
-        return updatedProducts;
-      }
-
-      return [
-        ...prev,
-        {
-          id: product.id,
-          name: product.name,
-          price: product.price,
-          quantity: 1,
-          observation: "",
-          additions: [],
-        },
-      ];
-    });
+    setProducts((prev) => [
+      ...prev,
+      {
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        quantity: 1, // Cantidad inicial
+        observation: "",
+        additions: [],
+      },
+    ]);
 
     setSearchTerm("");
     setSuggestions([]);
 
-    // 3. ENFOQUE AUTOMÁTICO: Solo si se cumple tu condición de negocio
     if (isFruver && inputRef.current) {
       inputRef.current.focus();
     }
@@ -113,12 +98,12 @@ const ProductSearch = ({ searchTerm, setSearchTerm, suggestions, setSuggestions,
     if (suggestions.length > 0) {
       if (e.key === "ArrowDown") {
         e.preventDefault();
-        setActiveIndex((prevIndex) => 
+        setActiveIndex((prevIndex) =>
           prevIndex < suggestions.length - 1 ? prevIndex + 1 : 0
         );
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
-        setActiveIndex((prevIndex) => 
+        setActiveIndex((prevIndex) =>
           prevIndex > 0 ? prevIndex - 1 : suggestions.length - 1
         );
       } else if (e.key === "Enter") {
@@ -173,9 +158,8 @@ const ProductSearch = ({ searchTerm, setSearchTerm, suggestions, setSuggestions,
                 key={product.id}
                 onClick={() => addProduct(product)}
                 // 6. Cambiamos el fondo dinámicamente si el elemento está seleccionado con las flechas
-                className={`p-3 cursor-pointer flex justify-between items-center border-b border-gray-800/50 last:border-0 ${
-                  index === activeIndex ? "bg-gray-800 text-white" : "hover:bg-gray-900"
-                }`}
+                className={`p-3 cursor-pointer flex justify-between items-center border-b border-gray-800/50 last:border-0 ${index === activeIndex ? "bg-gray-800 text-white" : "hover:bg-gray-900"
+                  }`}
               >
                 <div>
                   <div className="font-medium text-slate-200">{product.name}</div>
